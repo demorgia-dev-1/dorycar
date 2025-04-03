@@ -316,30 +316,6 @@ const LandingPage = () => {
           </Box>
         </Container>
       </Box>
-
-      {/* Logo and Login/Register Buttons */}
-      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-        <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', mr: 4 }}>
-          DoryCar
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/register')}
-          >
-            Get Started
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => navigate('/login')}
-            sx={{ backgroundColor: 'white' }}
-          >
-            Login
-          </Button>
-        </Box>
-      </Box>
     </Box>
   );
 };
