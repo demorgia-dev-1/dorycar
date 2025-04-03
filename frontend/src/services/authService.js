@@ -1,47 +1,54 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5000/api/auth';
 
 const authService = {
   register: async (userData) => {
     try {
-      console.log('Attempting registration with:', userData); // Debug log
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          password: userData.password
-        })
+        body: JSON.stringify(userData)
       });
 
-      console.log('Response received:', response); // Debug log
       const data = await response.json();
-      console.log('Response data:', data); // Debug log
-
       if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
       }
-
       return data;
     } catch (error) {
-      console.error('Registration failed:', error);
       throw error;
     }
+  },
+
+  login: async (credentials) => {
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
-  },
-
-  login: async (email, password) => {
-    // Login implementation
-  },
-
-  logout: () => {
-    localStorage.removeItem('user');
   }
 };
 

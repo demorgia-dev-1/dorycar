@@ -16,6 +16,16 @@ app.use(express.json());
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+
+// Add this test route before your other routes
+app.get('/', (req, res) => {
+  res.json({ message: 'DoryCar API is running' });
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API test route is working' });
+});
+
 app.use('/api/auth', authRoutes);
 
 // MongoDB connection
