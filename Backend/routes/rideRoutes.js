@@ -1,0 +1,170 @@
+const express = require('express');
+const router = express.Router();
+const Ride = require('../models/Ride');
+const auth = require('../middleware/auth');
+
+// Create a new ride
+router.post('/create', auth, async (req, res) => {
+  try {
+    const { origin, destination, date, seats, price } = req.body;
+    const ride = new Ride({
+      creator: req.user.userId,
+      origin,
+      destination,
+      date,
+      seats,
+      price
+    });
+    await ride.save();
+    res.status(201).json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating ride', error: error.message });
+  }
+});
+
+// Get all rides
+router.get('/', auth, async (req, res) => {
+  try {
+    const rides = await Ride.find()
+      .populate('creator', 'name')
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name')
+      .sort({ createdAt: -1 });
+    res.json(rides);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching rides', error: error.message });
+  }
+});
+
+// Express interest in a ride
+router.post('/:rideId/interest', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.creator.toString() === req.user.userId) {
+      return res.status(400).json({ message: 'Cannot express interest in your own ride' });
+    }
+
+    const alreadyInterested = ride.interestedUsers.find(
+      interest => interest.user.toString() === req.user.userId
+    );
+
+    if (alreadyInterested) {
+      return res.status(400).json({ message: 'Already expressed interest in this ride' });
+    }
+
+    ride.interestedUsers.push({
+      user: req.user.userId,
+      status: 'interested'
+    });
+
+    await ride.save();
+    res.json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error expressing interest', error: error.message });
+  }
+});
+
+// Accept a ride (for ride creator to accept an interested user)
+router.post('/:rideId/accept/:userId', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.creator.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Only ride creator can accept users' });
+    }
+
+    const interest = ride.interestedUsers.find(
+      interest => interest.user.toString() === req.params.userId
+    );
+
+    if (!interest) {
+      return res.status(404).json({ message: 'User has not expressed interest in this ride' });
+    }
+
+    interest.status = 'accepted';
+    ride.status = 'accepted';
+    ride.acceptor = req.params.userId;
+
+    await ride.save();
+    res.json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error accepting ride', error: error.message });
+  }
+});
+
+// Send a message in a ride chat
+router.post('/:rideId/messages', auth, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const ride = await Ride.findById(req.params.rideId);
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    // Check if user is either creator, acceptor, or interested user
+    const isParticipant = 
+      ride.creator.toString() === req.user.userId ||
+      (ride.acceptor && ride.acceptor.toString() === req.user.userId) ||
+      ride.interestedUsers.some(interest => interest.user.toString() === req.user.userId);
+
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'Not authorized to send messages in this ride chat' });
+    }
+
+    ride.messages.push({
+      sender: req.user.userId,
+      content
+    });
+
+    await ride.save();
+    
+    // Populate sender information for the new message
+    const populatedRide = await Ride.findById(ride._id)
+      .populate('messages.sender', 'name')
+      .populate('creator', 'name')
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name');
+
+    res.json(populatedRide);
+  } catch (error) {
+    res.status(500).json({ message: 'Error sending message', error: error.message });
+  }
+});
+
+// Get messages for a ride
+router.get('/:rideId/messages', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId)
+      .populate('messages.sender', 'name')
+      .populate('creator', 'name')
+      .populate('acceptor', 'name');
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    // Check if user is either creator, acceptor, or interested user
+    const isParticipant = 
+      ride.creator.toString() === req.user.userId ||
+      (ride.acceptor && ride.acceptor.toString() === req.user.userId) ||
+      ride.interestedUsers.some(interest => interest.user.toString() === req.user.userId);
+
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'Not authorized to view messages' });
+    }
+
+    res.json(ride.messages);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching messages', error: error.message });
+  }
+});
+
+module.exports = router;
