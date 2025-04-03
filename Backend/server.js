@@ -7,25 +7,18 @@ require('dotenv').config();
 const app = express();
 
 // CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
-
-// Add this test route before your other routes
-app.get('/', (req, res) => {
-  res.json({ message: 'DoryCar API is running' });
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API test route is working' });
-});
-
 app.use('/api/auth', authRoutes);
 
 // MongoDB connection

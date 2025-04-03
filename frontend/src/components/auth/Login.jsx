@@ -53,12 +53,15 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(formData.email, formData.password);
+      await login({
+        email: formData.email,
+        password: formData.password
+      });
       toast.success('Login successful!');
     } catch (error) {
       console.error('Login error:', error);
-      setError(error.message || 'Invalid email or password');
-      toast.error(error.message || 'Login failed');
+      setError('Login failed. Please check your credentials.');
+      toast.error('Login failed');
     } finally {
       setLoading(false);
     }

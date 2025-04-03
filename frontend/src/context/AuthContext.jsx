@@ -26,10 +26,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authService.login(credentials);
-      setUser(response.user);
-      toast.success('Login successful!');
-      navigate('/dashboard');
-      return response;
+      if (response.user && response.token) {
+        setUser(response.user);
+        toast.success('Login successful!');
+        navigate('/dashboard');
+        return response;
+      }
     } catch (error) {
       const errorMessage = error.message || 'Login failed';
       toast.error(errorMessage);
