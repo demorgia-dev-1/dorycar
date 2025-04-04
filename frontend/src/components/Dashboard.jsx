@@ -66,7 +66,7 @@ const Dashboard = () => {
     const isCreator = ride.creator === user._id;
     
     return (
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ mb:2, marginTop:15}}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const auth = require('./middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -18,8 +19,17 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authroutes');
+const rideRoutes = require('./routes/rideRoutes'); // Add this line
+
+// Apply routes
 app.use('/api/auth', authRoutes);
+app.use('/api/rides', rideRoutes); // Add this line
+
+// Protected route example
+app.get('/api/protected', auth, (req, res) => {
+  res.json({ message: 'This is a protected route' });
+});
 
 // MongoDB connection
 const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/dorycar';

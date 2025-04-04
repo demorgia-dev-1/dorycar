@@ -8,7 +8,7 @@ router.post('/create', auth, async (req, res) => {
   try {
     const { origin, destination, date, seats, price } = req.body;
     const ride = new Ride({
-      creator: req.user.userId,
+      creator: req.userId,  // Changed from req.user.userId to req.userId
       origin,
       destination,
       date,
@@ -44,12 +44,12 @@ router.post('/:rideId/interest', auth, async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
-    if (ride.creator.toString() === req.user.userId) {
+    if (ride.creator.toString() === req.userId) { // Changed from req.user.userId
       return res.status(400).json({ message: 'Cannot express interest in your own ride' });
     }
 
     const alreadyInterested = ride.interestedUsers.find(
-      interest => interest.user.toString() === req.user.userId
+      interest => interest.user.toString() === req.userId // Changed from req.user.userId
     );
 
     if (alreadyInterested) {
@@ -57,7 +57,7 @@ router.post('/:rideId/interest', auth, async (req, res) => {
     }
 
     ride.interestedUsers.push({
-      user: req.user.userId,
+      user: req.userId, // Changed from req.user.userId
       status: 'interested'
     });
 
@@ -76,7 +76,7 @@ router.post('/:rideId/accept/:userId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
-    if (ride.creator.toString() !== req.user.userId) {
+    if (ride.creator.toString() !== req.userId) { // Changed from req.user.userId
       return res.status(403).json({ message: 'Only ride creator can accept users' });
     }
 
@@ -164,6 +164,132 @@ router.get('/:rideId/messages', auth, async (req, res) => {
     res.json(ride.messages);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching messages', error: error.message });
+  }
+});
+
+// Search rides by criteria
+// Add this route to your existing rideRoutes.js
+router.get('/search', async (req, res) => {
+  try {
+    const { origin, destination, date, seats, maxPrice } = req.query;
+    
+    // Build search query
+    const searchQuery = {
+      status: 'pending', // Only show rides that haven't been accepted
+    };
+
+    // Add origin search with partial matching
+    if (origin) {
+      searchQuery.origin = { $regex: new RegExp(origin, 'i') };
+    }
+
+    // Add destination search with partial matching
+    if (destination) {
+      searchQuery.destination = { $regex: new RegExp(destination, 'i') };
+    }
+
+    // Add date search (if provided, search for rides on that day)
+    if (date) {
+      const searchDate = new Date(date);
+      const nextDay = new Date(searchDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      searchQuery.date = {
+        $gte: searchDate,
+        $lt: nextDay
+      };
+    }
+
+    // Add seats filter
+    if (seats) {
+      searchQuery.seats = { $gte: parseInt(seats) };
+    }
+
+    // Add price filter
+    if (maxPrice) {
+      searchQuery.price = { $lte: parseFloat(maxPrice) };
+    }
+
+    const rides = await Ride.find(searchQuery)
+      .populate('creator', 'name email')
+      .sort({ date: 1 });
+
+    res.json(rides);
+  } catch (error) {
+    res.status(500).json({ message: 'Error searching rides', error: error.message });
+  }
+});
+
+// Get user's rides (created, accepted, and interested)
+router.get('/my-rides', auth, async (req, res) => {
+  try {
+    const createdRides = await Ride.find({ creator: req.user.userId })
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name');
+    
+    const acceptedRides = await Ride.find({ acceptor: req.user.userId })
+      .populate('creator', 'name');
+    
+    const interestedRides = await Ride.find({
+      'interestedUsers.user': req.user.userId
+    }).populate('creator', 'name');
+
+    res.json({
+      created: createdRides,
+      accepted: acceptedRides,
+      interested: interestedRides
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user rides', error: error.message });
+  }
+});
+
+// Complete a ride
+router.put('/:rideId/complete', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.creator.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Only ride creator can complete the ride' });
+    }
+
+    if (ride.status !== 'accepted') {
+      return res.status(400).json({ message: 'Only accepted rides can be completed' });
+    }
+
+    ride.status = 'completed';
+    await ride.save();
+    res.json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error completing ride', error: error.message });
+  }
+});
+
+// Cancel a ride
+router.put('/:rideId/cancel', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.creator.toString() !== req.user.userId && 
+        ride.acceptor?.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Only ride creator or acceptor can cancel the ride' });
+    }
+
+    if (ride.status === 'completed' || ride.status === 'cancelled') {
+      return res.status(400).json({ message: 'Cannot cancel completed or already cancelled rides' });
+    }
+
+    ride.status = 'cancelled';
+    await ride.save();
+    res.json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error cancelling ride', error: error.message });
   }
 });
 

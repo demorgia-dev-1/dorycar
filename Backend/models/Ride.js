@@ -74,6 +74,23 @@ const rideSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  vehicleDetails: {
+    type: String,
+    required: false
+  },
+  additionalNotes: {
+    type: String,
+    required: false
+  },
+  completedAt: {
+    type: Date
+  },
+  cancelledAt: {
+    type: Date
+  },
+  cancellationReason: {
+    type: String
   }
 });
 
