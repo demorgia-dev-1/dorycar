@@ -61,10 +61,49 @@ const CreateRide = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography component="h1" variant="h5" gutterBottom>
+    <Container component="main" maxWidth="lg">
+      <Box
+        sx={{
+          marginTop: 15,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+      <Paper
+          elevation={3}
+          sx={{
+            padding: 7,
+            display: "flex",
+            flexDirection: "row", 
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+        <Box
+            sx={{
+              flex: 1,
+              backgroundImage: "url(/ride.jpg)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              // borderRadius: 2,
+              minHeight: 400,
+              transition: "transform 0.3s ease-in-out",
+              "&:hover": {
+                transform: "scale(1.1)",
+              },
+            }}
+          />
+          <Box
+            sx={{
+              flex: 1,
+              paddingLeft: 4,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+<Typography component="h1" variant="h5" gutterBottom>
             Create a New Ride
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
@@ -135,6 +174,8 @@ const CreateRide = () => {
               {loading ? 'Creating...' : 'Create Ride'}
             </Button>
           </Box>
+          </Box>
+          
         </Paper>
       </Box>
     </Container>
