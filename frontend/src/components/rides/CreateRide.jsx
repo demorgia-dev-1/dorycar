@@ -62,7 +62,7 @@ const CreateRide = () => {
 
   return (
     <Container component="main" maxWidth="sm">
-      <Box sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mt: 14, mb: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
           <Typography component="h1" variant="h5" gutterBottom>
             Create a New Ride

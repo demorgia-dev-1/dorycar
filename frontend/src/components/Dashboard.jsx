@@ -66,7 +66,7 @@ const Dashboard = () => {
     const isCreator = ride.creator === user._id;
     
     return (
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ mb:2, marginTop:15}}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -115,7 +115,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 14, mb: 4 }}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>

@@ -94,4 +94,32 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Add these new routes
+// Verify token route
+router.get('/verify-token', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+// Logout route
+router.post('/logout', (req, res) => {
+  // Since JWT is stateless, we'll handle token invalidation on the client side
+  res.json({ message: 'Logged out successfully' });
+});
+
 module.exports = router;
