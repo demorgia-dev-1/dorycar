@@ -72,12 +72,12 @@ const Dashboard = () => {
       toast.error(`Failed to ${action} ride`);
     }
   };
-
   const RideCard = ({ ride }) => {
-    const isCreator = ride.creator === user._id;
-    
+    const isCreator = ride.creator?._id === user._id || ride.creator === user._id;
+    // const isAcceptor = ride.acceptor?._id === user._id || ride.acceptor === user._id;  
+
     return (
-      <Card sx={{ mb:2, marginTop:15}}>
+      <Card sx={{ mb: 2, marginTop: 15 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -92,16 +92,37 @@ const Dashboard = () => {
             Role: {isCreator ? 'Creator' : 'Acceptor'}
           </Typography>
         </CardContent>
+    
+        {/* ✅ Show Interested Users for Creator */}
+        {isCreator && ride.interestedUsers?.length > 0 && (
+          <Box mt={1} ml={2}>
+            <Typography variant="subtitle2" gutterBottom>
+              Interested Users:
+            </Typography>
+            {ride.interestedUsers.map((interest, index) => (
+              <Box key={index} sx={{ mb: 1 }}>
+                <Typography variant="body2">
+                  {interest.user?.name || 'Unnamed User'} – Status: {interest.status}
+                </Typography>
+    
+                {interest.status === 'interested' && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 0.5 }}
+                    onClick={() => handleStatusChange(ride._id, 'accept', interest.user._id)}
+                  >
+                    Accept This User
+                  </Button>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+    
         <CardActions>
-          {ride.status === 'pending' && !isCreator && (
-            <Button
-              size="small"
-              color="primary"
-              onClick={() => handleStatusChange(ride._id, 'accept')}
-            >
-              Accept Ride
-            </Button>
-          )}
+          {/* ✅ Show Complete/Cancel for accepted rides */}
           {ride.status === 'accepted' && (
             <Button
               size="small"
@@ -123,6 +144,83 @@ const Dashboard = () => {
         </CardActions>
       </Card>
     );
+    
+
+//     return (
+//       <Card sx={{ mb:2, marginTop:15}}>
+//         <CardContent>
+//           <Typography variant="h6" gutterBottom>
+//             {ride.origin} → {ride.destination}
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary">
+//             Date: {new Date(ride.date).toLocaleDateString()}
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary">
+//             Status: {ride.status}
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary">
+//             Role: {isCreator ? 'Creator' : 'Acceptor'}
+//           </Typography>
+//         </CardContent>
+//         <CardActions>
+//         {/* If current user is the creator, show accept buttons for interested users */}
+// {isCreator && ride.interestedUsers?.length > 0 && (
+//   <Box mt={2}>
+//     <Typography variant="body2" fontWeight="bold">
+//       Interested Users:
+//     </Typography>
+//     {ride.interestedUsers.map((interest, index) => (
+//       <Box key={index} sx={{ ml: 2, mb: 1 }}>
+//         <Typography variant="body2">
+//           {interest.user?.name || 'Unnamed User'} - Status: {interest.status}
+//         </Typography>
+
+//         {interest.status === 'interested' && (
+//           <Button
+//             size="small"
+//             color="primary"
+//             onClick={() =>
+//               handleStatusChange(ride._id, 'accept', interest.user._id)
+//             }
+//           >
+//             Accept This User
+//           </Button>
+//         )}
+//       </Box>
+//     ))}
+//   </Box>
+// )}
+
+//           {/* {ride.status === 'pending' && !isCreator && (
+//             <Button
+//               size="small"
+//               color="primary"
+//               onClick={() => handleStatusChange(ride._id, 'accept')}
+//             >
+//               Accept Ride
+//             </Button>
+//           )} */}
+//           {ride.status === 'accepted' && (
+//             <Button
+//               size="small"
+//               color="success"
+//               onClick={() => handleStatusChange(ride._id, 'complete')}
+//             >
+//               Complete Ride
+//             </Button>
+//           )}
+//           {ride.status !== 'completed' && (
+//             <Button
+//               size="small"
+//               color="error"
+//               onClick={() => handleStatusChange(ride._id, 'cancel')}
+//             >
+//               Cancel Ride
+//             </Button>
+//           )}
+//         </CardActions>
+//       </Card>
+//     );
   };
 
   return (
