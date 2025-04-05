@@ -37,12 +37,12 @@ export const rideService = {
   },
 
   cancelRide: async (rideId) => {
-    const response = await api.post(`/rides/${rideId}/cancel`);
+    const response = await api.put(`/rides/${rideId}/cancel`);
     return response.data;
   },
 
   completeRide: async (rideId) => {
-    const response = await api.post(`/rides/${rideId}/complete`);
+    const response = await api.put(`/rides/${rideId}/complete`);
     return response.data;
   }
 };

@@ -141,7 +141,7 @@ router.post('/:rideId/messages', auth, async (req, res) => {
 
     // Check if user is either creator, acceptor, or interested user
     const isParticipant = 
-      ride.creator.toString() === req.user.userId ||
+      ride.creator.toString() === req.userId ||
       (ride.acceptor && ride.acceptor.toString() === req.user.userId) ||
       ride.interestedUsers.some(interest => interest.user.toString() === req.user.userId);
 
@@ -183,7 +183,7 @@ router.get('/:rideId/messages', auth, async (req, res) => {
 
     // Check if user is either creator, acceptor, or interested user
     const isParticipant = 
-      ride.creator.toString() === req.user.userId ||
+      ride.creator.toString() === req.userId ||
       (ride.acceptor && ride.acceptor.toString() === req.user.userId) ||
       ride.interestedUsers.some(interest => interest.user.toString() === req.user.userId);
 
@@ -245,7 +245,7 @@ router.put('/:rideId/complete', auth, async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
-    if (ride.creator.toString() !== req.user.userId) {
+    if (ride.creator.toString() !== req.userId) {
       return res.status(403).json({ message: 'Only ride creator can complete the ride' });
     }
 
@@ -269,7 +269,7 @@ router.put('/:rideId/cancel', auth, async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
-    if (ride.creator.toString() !== req.user.userId && 
+    if (ride.creator.toString() !== req.userId && 
         ride.acceptor?.toString() !== req.user.userId) {
       return res.status(403).json({ message: 'Only ride creator or acceptor can cancel the ride' });
     }

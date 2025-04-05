@@ -31,6 +31,16 @@ export const rideService = {
     return response.data;
   },
 
+  cancelRide: async (rideId) => {
+    const response = await axios.put(`${API_BASE_URL}/rides/${rideId}/cancel`);
+    return response.data;
+  },
+
+  completeRide: async (rideId) => {
+    const response = await axios.put(`${API_BASE_URL}/rides/${rideId}/complete`);
+    return response.data;
+  },
+
   // Chat functionality
   getMessages: async (rideId) => {
     const response = await axios.get(`${API_BASE_URL}/rides/${rideId}/messages`);
