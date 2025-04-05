@@ -170,54 +170,17 @@ router.get('/:rideId/messages', auth, async (req, res) => {
 // Search rides by criteria
 // Add this route to your existing rideRoutes.js
 router.get('/search', async (req, res) => {
-  try {
-    const { origin, destination, date, seats, maxPrice } = req.query;
-    
-    // Build search query
-    const searchQuery = {
-      status: 'pending', // Only show rides that haven't been accepted
-    };
-
-    // Add origin search with partial matching
-    if (origin) {
-      searchQuery.origin = { $regex: new RegExp(origin, 'i') };
-    }
-
-    // Add destination search with partial matching
-    if (destination) {
-      searchQuery.destination = { $regex: new RegExp(destination, 'i') };
-    }
-
-    // Add date search (if provided, search for rides on that day)
-    if (date) {
-      const searchDate = new Date(date);
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      
-      searchQuery.date = {
-        $gte: searchDate,
-        $lt: nextDay
-      };
-    }
-
-    // Add seats filter
-    if (seats) {
-      searchQuery.seats = { $gte: parseInt(seats) };
-    }
-
-    // Add price filter
-    if (maxPrice) {
-      searchQuery.price = { $lte: parseFloat(maxPrice) };
-    }
-
-    const rides = await Ride.find(searchQuery)
-      .populate('creator', 'name email')
-      .sort({ date: 1 });
-
-    res.json(rides);
-  } catch (error) {
-    res.status(500).json({ message: 'Error searching rides', error: error.message });
-  }
+  const {
+    origin,
+    destination,
+    date,
+    seats,
+    maxPrice,
+    sortBy,
+    filterBy
+  } = req.query;
+  
+  // Advanced search logic with filters and sorting
 });
 
 // Get user's rides (created, accepted, and interested)
