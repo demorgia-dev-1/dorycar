@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import {
+  Box
+} from "@mui/material";
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -12,10 +15,10 @@ import CreateRide from './components/rides/CreateRide';
 import RideList from './components/rides/RideList';
 import PrivateRoute from './components/PrivateRoute';
 import theme from './theme';
-
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+<>
+      <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <CssBaseline />
         <div className="App">
@@ -34,6 +37,11 @@ function App() {
         </div>
       </LocalizationProvider>
     </ThemeProvider>
+    {/* </div> */}
+</>
+    
+    
+    
   );
 }
 

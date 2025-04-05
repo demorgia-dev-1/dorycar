@@ -1,21 +1,12 @@
-const API_URL = 'http://localhost:5000/api/auth';
+
+import axios from "axios";
+import { API_BASE_URL } from "./api";
 
 const authService = {
   register: async (userData) => {
     try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-      return data;
+      const response = await axios.post(`${API_BASE_URL}/auth/register`,userData);
+      return response.data;
     } catch (error) {
       throw error;
     }
@@ -24,23 +15,8 @@ const authService = {
   login: async (credentials) => {
     try {
       console.log('Attempting login with:', credentials); // Debug log
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials)
-      });
-
-      console.log('Login response status:', response.status); // Debug log
-      const data = await response.json();
-      console.log('Login response data:', data); // Debug log
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials);
+      const data = response.data;
 
       if (data.token) {
         localStorage.setItem('token', data.token);
@@ -49,7 +25,7 @@ const authService = {
 
       return data;
     } catch (error) {
-      console.error('Login error details:', error); // Debug log
+      console.error('Login error details:', error);
       throw error;
     }
   },

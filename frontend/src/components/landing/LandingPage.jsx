@@ -49,7 +49,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <Box>
+        <Box>
       <>
         {/* Hero Section with Background Image */}
         <Box
@@ -382,6 +382,7 @@ const LandingPage = () => {
                         "radial-gradient(#f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     },
+                    
                   }}
                 >
                   <Card
@@ -392,15 +393,20 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                        background:
+                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      color: "white",
                     }}
                   >
                     <DirectionsCarIcon
                       className="hover-icon"
                       sx={{
                         fontSize: 60,
-                        color: "primary.main",
+                        // color: "primary.main",
+                        color: "white",
                         mb: 2,
                         transition: "color 0.3s ease-in-out",
+                        
                       }}
                     />
                     <CardContent>
@@ -436,6 +442,7 @@ const LandingPage = () => {
                         "radial-gradient(#f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     },
+                    
                   }}
                 >
                   <Card
@@ -446,13 +453,17 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                        background:
+                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      color: "white",
                     }}
                   >
                     <SearchIcon
                       className="hover-icon"
                       sx={{
                         fontSize: 60,
-                        color: "primary.main",
+                        // color: "primary.main",
+                        color: "white",
                         mb: 2,
                         transition: "color 0.3s ease-in-out",
                       }}
@@ -500,13 +511,17 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                        background:
+                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      color: "white",
                     }}
                   >
                     <SecurityIcon
                       className="hover-icon"
                       sx={{
                         fontSize: 60,
-                        color: "primary.main",
+                        // color: "primary.main",
+                        color: "white",
                         mb: 2,
                         transition: "color 0.3s ease-in-out",
                       }}
@@ -780,6 +795,8 @@ const LandingPage = () => {
         </Container>
       </Box>
     </Box>
+
+
   );
 };
 

@@ -34,7 +34,7 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email
       }
@@ -94,7 +94,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Add these new routes
 // Verify token route
 router.get('/verify-token', async (req, res) => {
   try {

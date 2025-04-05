@@ -28,9 +28,18 @@ const Dashboard = () => {
   const fetchUserRides = async () => {
     try {
       const rides = await rideService.getRides();
-      setUserRides(rides.filter(ride => 
-        ride.creator === user._id || ride.acceptor === user._id
-      ));
+      // setUserRides(rides.filter(ride => 
+      //   ride.creator === user._id || ride.acceptor === user._id
+      // ));
+
+      setUserRides(
+        rides.filter(
+          (ride) =>
+            ride.creator?._id === user._id || ride.creator === user._id || 
+            ride.acceptor?._id === user._id || ride.acceptor === user._id
+        )
+      );
+      
     } catch (error) {
       console.error('Error fetching rides:', error);
       toast.error('Failed to fetch rides');
@@ -39,11 +48,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleStatusChange = async (rideId, action) => {
+  const handleStatusChange = async (rideId, action, userId) => {
     try {
       switch (action) {
         case 'accept':
-          await rideService.acceptRide(rideId);
+          // await rideService.acceptInterest(rideId, user._id);
+
+          await rideService.acceptRide(rideId, userId);
           break;
         case 'cancel':
           await rideService.cancelRide(rideId);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   Container,
@@ -15,6 +15,7 @@ import {
 import { toast } from "react-toastify";
 
 const Login = () => {
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
@@ -58,6 +59,7 @@ const Login = () => {
         password: formData.password,
       });
       toast.success("Login successful!");
+      navigate('/dashboard')
     } catch (error) {
       console.error("Login error:", error);
       setError("Login failed. Please check your credentials.");

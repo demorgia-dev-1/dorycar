@@ -1,5 +1,7 @@
-import api from './api';
+// import api from './api';
 import io from 'socket.io-client';
+import { API_BASE_URL } from './api';
+import axios from 'axios';
 
 const socket = io('/', {
   path: '/socket.io',
@@ -9,34 +11,34 @@ const socket = io('/', {
 export const rideService = {
   // Ride CRUD operations
   createRide: async (rideData) => {
-    const response = await api.post('/api/rides/create', rideData);
+    const response = await axios.post(`${API_BASE_URL}/rides/create`, rideData);
     return response.data;
   },
 
   getRides: async () => {
-    const response = await api.get('/api/rides');
+    const response = await axios.get(`${API_BASE_URL}/rides`);
     return response.data;
   },
 
   // Interest management
   expressInterest: async (rideId) => {
-    const response = await api.post(`/api/rides/${rideId}/interest`);
+    const response = await axios.post(`${API_BASE_URL}/rides/${rideId}/interest`);
     return response.data;
   },
 
   acceptInterest: async (rideId, userId) => {
-    const response = await api.post(`/api/rides/${rideId}/accept/${userId}`);
+    const response = await axios.post(`${API_BASE_URL}/rides/${rideId}/accept/${userId}`);
     return response.data;
   },
 
   // Chat functionality
   getMessages: async (rideId) => {
-    const response = await api.get(`/api/rides/${rideId}/messages`);
+    const response = await axios.get(`${API_BASE_URL}/rides/${rideId}/messages`);
     return response.data;
   },
 
   sendMessage: async (rideId, content) => {
-    const response = await api.post(`/api/rides/${rideId}/messages`, { content });
+    const response = await axios.post(`${API_BASE_URL}/rides/${rideId}/messages`, { content });
     return response.data;
   },
 

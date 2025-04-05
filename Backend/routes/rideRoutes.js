@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 // Create a new ride
 router.post('/create', auth, async (req, res) => {
+  console.log('Received request data:', req.body, 'User:', req.userId); 
   try {
     const { origin, destination, date, seats, price } = req.body;
     const ride = new Ride({

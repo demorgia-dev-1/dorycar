@@ -38,7 +38,8 @@ const RideList = () => {
 
   const handleAcceptRide = async (rideId) => {
     try {
-      await rideService.acceptRide(rideId);
+      // await rideService.acceptRide(rideId);
+      await rideService.acceptRide(rideId, user._id);
       toast.success('Ride accepted successfully!');
       fetchRides();
     } catch (error) {
@@ -49,8 +50,21 @@ const RideList = () => {
 
   const RideCard = ({ ride }) => {
     const isCreator = ride.creator === user._id;
-    const isAcceptor = ride.acceptor === user._id;
-    const canAccept = !isCreator && !isAcceptor && ride.status === 'pending';
+  const isAcceptor = ride.acceptor === user._id;
+  const alreadyInterested = ride.interestedUsers?.some(u => u.user === user._id);
+  const canAccept = !isCreator && !isAcceptor && !alreadyInterested && ride.status === 'pending';
+
+
+    const handleExpressInterest = async (rideId) => {
+      try {
+        await rideService.expressInterest(rideId);
+        toast.success("Interest expressed!");
+        fetchRides();
+      } catch (error) {
+        console.error('Error expressing interest:', error);
+        toast.error(error.response?.data?.message || "Failed to express interest");
+      }
+    };
 
     return (
       <Card sx={{ mb: 2 }}>
@@ -100,20 +114,38 @@ const RideList = () => {
               Accept Ride
             </Button>
           )}
-          {(isCreator || isAcceptor) && (
+          {(isCreator || isAcceptor || alreadyInterested) && (
             <Chip
               label={isCreator ? 'You created this ride' : 'You accepted this ride'}
               size="small"
               variant="outlined"
             />
+            
           )}
+          
         </CardActions>
+        <CardActions>
+        {!isCreator && !isAcceptor && !alreadyInterested && (
+          <Button onClick={() => handleExpressInterest(ride._id)}>Express Interest</Button>
+        )}
+      </CardActions>
+       {ride.status === 'accepted' && (
+          <Typography variant='body2' color={'text.secondary'}>
+            accepted by {ride.acceptor.name}
+          </Typography>
+       )}
+        {ride.status === 'completed' && (
+          <Typography variant='body2' color={'text.secondary'}>
+            completed on {new Date(ride.completedAt).toLocaleDateString()}
+          </Typography>
+
+        )}
       </Card>
     );
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 15, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Available Rides
@@ -129,6 +161,7 @@ const RideList = () => {
         )}
       </Paper>
     </Container>
+    
   );
 };
 
