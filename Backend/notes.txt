@@ -1,0 +1,51 @@
+1. Database Models :
+A. `Backend/models/User.js`
+
+- User Schema:
+  - name (String, required)
+  - email (String, required, unique)
+  - password (String, required, min length 6)
+  - createdAt (Date, auto-generated)
+B. `Backend/models/Ride.js`
+
+- Ride Schema:
+  - creator (ObjectId, references User)
+  - origin (String, required)
+  - destination (String, required)
+  - date (Date, required)
+  - seats (Number, required, min 1)
+  - price (Number, required, min 0)
+  - status (String, enum: ['pending', 'accepted', 'completed', 'cancelled'])
+  - interestedUsers (Array of users interested in the ride)
+  - acceptor (ObjectId, references User)
+  - messages (Array of message objects)
+  - vehicleDetails (String, optional)
+  - additionalNotes (String, optional)
+  - timestamps for completion and cancellation
+2. Authentication :
+- JWT-based authentication
+- Protected routes using middleware
+- Token verification and user session management
+3. API Routes :
+A. Auth Routes ( `Backend/routes/authRoutes.js` ):
+
+- POST /api/auth/register - User registration
+- POST /api/auth/login - User login
+- GET /api/auth/verify-token - Verify JWT token
+- POST /api/auth/logout - User logout
+B. Ride Routes:
+
+- CRUD operations for rides
+- Ride status management
+- User interest handling
+- Messaging system
+4. Middleware : `Backend/middleware/auth.js`
+- JWT verification
+- Protected route handling
+- Authentication checks
+5. Server Configuration : `Backend/server.js`
+- Express server setup
+- CORS configuration
+- MongoDB connection
+- Route mounting
+- Environment variables

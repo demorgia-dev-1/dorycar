@@ -23,14 +23,43 @@ router.post('/create', auth, async (req, res) => {
   }
 });
 
-// Get all rides
+// Get all rides with filters
 router.get('/', auth, async (req, res) => {
   try {
-    const rides = await Ride.find()
+    const { origin, destination, date } = req.query;
+    
+    // Build filter object
+    const filter = {};
+    
+    if (origin) {
+      filter.origin = { $regex: new RegExp(origin, 'i') }; // Case-insensitive search
+    }
+    
+    if (destination) {
+      filter.destination = { $regex: new RegExp(destination, 'i') }; // Case-insensitive search
+    }
+    
+    if (date) {
+      // Convert date string to Date object and create range for the entire day
+      const searchDate = new Date(date);
+      const nextDay = new Date(searchDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      filter.date = {
+        $gte: searchDate,
+        $lt: nextDay
+      };
+    }
+
+    // Add status filter to show only pending and accepted rides
+    filter.status = { $in: ['pending', 'accepted'] };
+
+    const rides = await Ride.find(filter)
       .populate('creator', 'name')
       .populate('acceptor', 'name')
       .populate('interestedUsers.user', 'name')
       .sort({ createdAt: -1 });
+
     res.json(rides);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching rides', error: error.message });
