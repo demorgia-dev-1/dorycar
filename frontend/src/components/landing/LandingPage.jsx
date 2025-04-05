@@ -49,100 +49,107 @@ const LandingPage = () => {
   }, []);
 
   return (
-        <Box>
+    <Box>
       <>
         {/* Hero Section with Background Image */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: "80vh",
-          }}
+        <motion.div
+          initial={{ opacity: 0, y: -100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ amount: 0.2 }}
         >
-          {/* Image Container */}
-          <Box
-            component="img"
-            src="bg1.png"
-            alt="Ride with DoryCar"
-            sx={{
-              height: "auto",
-              width: "50%",
-              maxHeight: "100%",
-              objectFit: "contain",
-            }}
-          />
-
-          {/* Content Container */}
           <Box
             sx={{
-              width: "50%",
-              height: "100%",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              height: "80vh",
             }}
           >
-            <Container maxWidth="md">
-              <Grid item xs={12}>
-                <Typography
-                  variant="h2"
-                  sx={{
-                    textAlign: "left",
-                    fontSize: "2rem",
-                    mb: 5,
-                    backgroundColor: "Highlight",
-                    color: "white",
-                    borderRadius: 10,
-                    paddingY: 1,
-                    paddingX: 3,
-                    width: "fit-content",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Ride with DoryCar
-                </Typography>
+            {/* Image Container */}
 
-                <Box
-                  sx={{
-                    display: "inline-block",
-                    paddingY: 1,
-                    paddingX: 3,
-                    borderRadius: 8,
-                    background:
-                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
-                  }}
-                >
+            <Box
+              component="img"
+              src="bg1.png"
+              alt="Ride with DoryCar"
+              sx={{
+                height: "auto",
+                width: "50%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
+            />
+            {/* Content Container */}
+            <Box
+              sx={{
+                width: "50%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Container maxWidth="md">
+                <Grid item xs={12}>
                   <Typography
-                    variant="h5"
+                    variant="h2"
                     sx={{
                       textAlign: "left",
-                      fontSize: "3.2rem",
-                      fontWeight: "none",
+                      fontSize: "2rem",
+                      mb: 5,
+                      backgroundColor: "Highlight",
                       color: "white",
-                      whiteSpace: "normal",
-                      wordWrap: "break-word",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
+                      borderRadius: 10,
+                      paddingY: 1,
+                      paddingX: 3,
+                      width: "fit-content",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <span>
-                      <Typewriter
-                        words={["Connect Ride & Share Ride.."]}
-                        loop={0}
-                        cursor
-                        cursorStyle="|"
-                        typeSpeed={50}
-                      />
-                    </span>
+                    Ride with DoryCar
                   </Typography>
-                </Box>
-              </Grid>
-            </Container>
+
+                  <Box
+                    sx={{
+                      display: "inline-block",
+                      paddingY: 1,
+                      paddingX: 3,
+                      borderRadius: 8,
+                      background:
+                        "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                    }}
+                  >
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        textAlign: "left",
+                        fontSize: "3.2rem",
+                        fontWeight: "none",
+                        color: "white",
+                        whiteSpace: "normal",
+                        wordWrap: "break-word",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                      }}
+                    >
+                      <span>
+                        <Typewriter
+                          words={["Connect Ride & Share Ride.."]}
+                          loop={0}
+                          cursor
+                          cursorStyle="|"
+                          typeSpeed={50}
+                        />
+                      </span>
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Container>
+            </Box>
           </Box>
-        </Box>
+        </motion.div>
 
         {/* Form Section (moved below the image) */}
         <Container maxWidth="xl" sx={{ my: 1, mt: -5 }}>
@@ -382,7 +389,6 @@ const LandingPage = () => {
                         "radial-gradient(#f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     },
-                    
                   }}
                 >
                   <Card
@@ -393,8 +399,8 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-                        background:
-                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      background:
+                        "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     }}
                   >
@@ -406,7 +412,6 @@ const LandingPage = () => {
                         color: "white",
                         mb: 2,
                         transition: "color 0.3s ease-in-out",
-                        
                       }}
                     />
                     <CardContent>
@@ -442,7 +447,6 @@ const LandingPage = () => {
                         "radial-gradient(#f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     },
-                    
                   }}
                 >
                   <Card
@@ -453,8 +457,8 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-                        background:
-                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      background:
+                        "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     }}
                   >
@@ -511,8 +515,8 @@ const LandingPage = () => {
                       p: 3,
                       transition:
                         "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-                        background:
-                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                      background:
+                        "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
                       color: "white",
                     }}
                   >
@@ -737,7 +741,7 @@ const LandingPage = () => {
                 passengers for safe and affordable travel.
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 <Typography
@@ -795,8 +799,6 @@ const LandingPage = () => {
         </Container>
       </Box>
     </Box>
-
-
   );
 };
 
