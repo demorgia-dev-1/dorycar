@@ -21,7 +21,30 @@ const userSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  profilePicture: String,
+  phoneNumber: {
+    type: String,
+    required: true
+  },
+  driverLicense: {
+    number: String,
+    verified: Boolean
+  },
+  ratings: [{
+    fromUser: { type: Schema.Types.ObjectId, ref: 'User' },
+    rating: Number,
+    comment: String,
+    date: { type: Date, default: Date.now }
+  }],
+  averageRating: { type: Number, default: 0 },
+  vehicleInfo: [{
+    model: String,
+    year: Number,
+    licensePlate: String,
+    color: String,
+    verified: Boolean
+  }]
 });
 
 const User = mongoose.model('User', userSchema);
