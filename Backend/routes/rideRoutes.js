@@ -2,43 +2,80 @@ const express = require('express');
 const router = express.Router();
 const Ride = require('../models/Ride');
 const auth = require('../middleware/auth');
+const User = require('../models/User');
 
-// Create a new ride
 router.post('/create', auth, async (req, res) => {
-  console.log('Received request data:', req.body, 'User:', req.userId); 
+  console.log('Received request data:', req.body, 'User:', req.userId);
+
   try {
-    const { origin, destination, date, seats, price } = req.body;
+    const { origin, destination, date, seats, price, arrivalTime, departureTime, paymentMethods } = req.body;
+
+    // Fetch user
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check required fields for vehicle
+    const vehicle = user.vehicle || {};
+    const missingFields = [];
+
+    const requiredVehicleFields = ['type', 'make', 'model', 'registration', 'seats', 'fuel', 'vin'];
+    requiredVehicleFields.forEach(field => {
+      if (!vehicle[field]) {
+        missingFields.push(`vehicle.${field}`);
+      }
+    });
+
+    // Check other user required fields
+    if (!user.phone) missingFields.push('phone');
+    if (!user.gender) missingFields.push('gender');
+    if (!user.emergencyContact) missingFields.push('emergencyContact');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: 'Please complete your profile before creating a ride',
+        missingFields
+      });
+    }
+
+    // Create and save the ride
     const ride = new Ride({
-      creator: req.userId,  // Changed from req.user.userId to req.userId
+      creator: req.userId,
       origin,
       destination,
       date,
       seats,
-      price
+      price,
+      arrivalTime, 
+      departureTime, 
+      paymentMethods
     });
+
     await ride.save();
+    req.app.get('io').emit('ride-updated', ride);
     res.status(201).json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error creating ride', error: error.message });
   }
 });
 
-// Get all rides with filters
+
 router.get('/', auth, async (req, res) => {
   try {
     const { origin, destination, date } = req.query;
-    
-    // Build filter object
+
     const filter = {};
-    
+
     if (origin) {
-      filter.origin = { $regex: new RegExp(origin, 'i') }; // Case-insensitive search
+      filter.origin = { $regex: new RegExp(origin, 'i') };
     }
-    
+
     if (destination) {
-      filter.destination = { $regex: new RegExp(destination, 'i') }; // Case-insensitive search
+      filter.destination = { $regex: new RegExp(destination, 'i') };
     }
-    
+
     if (date) {
       // Convert date string to Date object and create range for the entire day
       const searchDate = new Date(date);
@@ -50,23 +87,27 @@ router.get('/', auth, async (req, res) => {
         $lt: nextDay
       };
     }
+    
 
-    // Add status filter to show only pending and accepted rides
     filter.status = { $in: ['pending', 'accepted'] };
 
     const rides = await Ride.find(filter)
-      .populate('creator', 'name')
+      // .populate('creator', 'name')
+      .populate('creator', 'name profileImage phone gender emergencyContact preferredCommunication ridePreference vehicle averageRating ratings')
+
       .populate('acceptor', 'name')
       .populate('interestedUsers.user', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean(); //  Optional performance boost
 
     res.json(rides);
   } catch (error) {
+    console.error('Error in /api/rides route:', error.message);
     res.status(500).json({ message: 'Error fetching rides', error: error.message });
   }
 });
 
-// Express interest in a ride
+
 router.post('/:rideId/interest', auth, async (req, res) => {
   try {
     const ride = await Ride.findById(req.params.rideId);
@@ -74,12 +115,12 @@ router.post('/:rideId/interest', auth, async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
-    if (ride.creator.toString() === req.userId) { // Changed from req.user.userId
+    if (ride.creator.toString() === req.userId) {
       return res.status(400).json({ message: 'Cannot express interest in your own ride' });
     }
 
     const alreadyInterested = ride.interestedUsers.find(
-      interest => interest.user.toString() === req.userId // Changed from req.user.userId
+      interest => interest.user.toString() === req.userId
     );
 
     if (alreadyInterested) {
@@ -87,14 +128,27 @@ router.post('/:rideId/interest', auth, async (req, res) => {
     }
 
     ride.interestedUsers.push({
-      user: req.userId, // Changed from req.user.userId
+      user: req.userId,
       status: 'interested'
     });
 
     await ride.save();
+
+    // const populatedRide = await ride.populate([
+    //   { path: 'creator', select: 'name' },
+    //   { path: 'acceptor', select: 'name' },
+    //   { path: 'interestedUsers.user', select: 'name' }
+    // ]);
+
+    // req.app.get('io').emit('ride-updated', populatedRide);
+
+    // res.json(populatedRide);
     res.json(ride);
   } catch (error) {
-    res.status(500).json({ message: 'Error expressing interest', error: error.message });
+    res.status(500).json({
+      message: 'Error expressing interest',
+      error: error.message
+    });
   }
 });
 
@@ -123,13 +177,60 @@ router.post('/:rideId/accept/:userId', auth, async (req, res) => {
     ride.acceptor = req.params.userId;
 
     await ride.save();
+    // req.app.get('io').emit('ride-updated', ride);
     res.json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error accepting ride', error: error.message });
   }
 });
 
+// router.post('/:rideId/accept/:userId', auth, async (req, res) => {
+//   try {
+//     const ride = await Ride.findById(req.params.rideId)
+//       .populate('creator', 'name')
+//       .populate('acceptor', 'name')
+//       .populate('interestedUsers.user', 'name');
+
+//     if (!ride) {
+//       return res.status(404).json({ message: 'Ride not found' });
+//     }
+
+//     if (ride.creator.id !== req.userId) {
+//       return res.status(403).json({ message: 'Only ride creator can accept users' });
+//     }
+
+//     const interest = ride.interestedUsers.find(
+//       interest => interest.user.toString() === req.params.userId
+//     );
+
+//     if (!interest) {
+//       return res.status(404).json({ message: 'User has not expressed interest in this ride' });
+//     }
+
+//     interest.status = 'accepted';
+//     ride.status = 'accepted';
+//     ride.acceptor = req.params.userId;
+
+//     await ride.save();
+
+//     // ✅ Emit event to specific passenger (user)
+//     req.app.get('io').to(req.params.userId).emit('ride-accepted', {
+//       rideId: ride._id,
+//       driver: ride.creator?.name || '',
+//       origin: ride.origin,
+//       destination: ride.destination,
+//     });
+
+//     req.app.get('io').emit('ride-updated', ride);
+//     res.json(ride);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error accepting ride', error: error.message });
+//   }
+// });
+
+
 // Send a message in a ride chat
+
 router.post('/:rideId/messages', auth, async (req, res) => {
   try {
     const { content } = req.body;
@@ -163,6 +264,8 @@ router.post('/:rideId/messages', auth, async (req, res) => {
       .populate('acceptor', 'name')
       .populate('interestedUsers.user', 'name');
 
+      req.app.get('io').emit('ride-updated', populatedRide);
+
     res.json(populatedRide);
   } catch (error) {
     res.status(500).json({ message: 'Error sending message', error: error.message });
@@ -190,6 +293,7 @@ router.get('/:rideId/messages', auth, async (req, res) => {
     if (!isParticipant) {
       return res.status(403).json({ message: 'Not authorized to view messages' });
     }
+    req.app.get('io').emit('ride-updated', ride);
 
     res.json(ride.messages);
   } catch (error) {
@@ -227,6 +331,9 @@ router.get('/my-rides', auth, async (req, res) => {
       'interestedUsers.user': req.user.userId
     }).populate('creator', 'name');
 
+    // req.app.get('io').emit('ride-updated', populatedRide);
+
+
     res.json({
       created: createdRides,
       accepted: acceptedRides,
@@ -255,6 +362,8 @@ router.put('/:rideId/complete', auth, async (req, res) => {
 
     ride.status = 'completed';
     await ride.save();
+    req.app.get('io').emit('ride-updated', ride);
+
     res.json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error completing ride', error: error.message });
@@ -280,6 +389,8 @@ router.put('/:rideId/cancel', auth, async (req, res) => {
 
     ride.status = 'cancelled';
     await ride.save();
+    req.app.get('io').emit('ride-updated', ride);
+
     res.json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error cancelling ride', error: error.message });

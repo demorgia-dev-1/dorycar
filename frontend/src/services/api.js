@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { io } from 'socket.io-client';
+export const socket = io('http://localhost:5000'); // or your deployed backend URL
+
 
 export const API_BASE_URL = "http://localhost:5000/api";
 
@@ -9,6 +12,12 @@ const api = axios.create({
   }
 });
 
+export const updateUser = async (userId, data) => {
+  const response = await api.put(`/users/${userId}`, data);
+  return response.data;
+};
+
+
 // Ride services
 export const rideService = {
   createRide: async (rideData) => {
@@ -16,8 +25,13 @@ export const rideService = {
     return response.data;
   },
 
+  // searchRides: async (searchData) => {
+  //   const response = await api.get(`/rides/search`, { params: searchData });
+  //   return response.data;
+  // },
+
   searchRides: async (searchData) => {
-    const response = await api.get(`/rides/search`, { params: searchData });
+    const response = await api.get(`/rides`, { params: searchData });
     return response.data;
   },
 

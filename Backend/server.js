@@ -1,14 +1,40 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 const auth = require('./middleware/auth');
-require('dotenv').config();
 
 const app = express();
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(','); // ✅ Define early
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Join a personal room with user ID
+  socket.on('join', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room ${userId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 
 // CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -21,10 +47,12 @@ app.use(express.json());
 // Routes
 const authRoutes = require('./routes/authroutes');
 const rideRoutes = require('./routes/rideRoutes'); // Add this line
+const userRoutes = require('./routes/userRoutes')
 
 // Apply routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes); // Add this line
+app.use('/api/users', userRoutes);
 
 // Protected route example
 app.get('/api/protected', auth, (req, res) => {
@@ -41,4 +69,4 @@ mongoose.connect(mongoURI, {
 .catch(err => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -11,6 +11,7 @@ const socket = io('/', {
 export const rideService = {
   // Ride CRUD operations
   createRide: async (rideData) => {
+    console.log("📦 Payload to backend:", rideData);
     const response = await axios.post(`${API_BASE_URL}/rides/create`, rideData);
     return response.data;
   },
