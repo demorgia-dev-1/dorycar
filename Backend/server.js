@@ -5,8 +5,12 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const auth = require('./middleware/auth');
+const socketAuth = require('./middleware/socketAuth'); // ✅ Import
+
+
 
 const app = express();
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(','); // ✅ Define early
 
 const server = http.createServer(app);
@@ -17,19 +21,30 @@ const io = new Server(server, {
   }
 });
 
+
 app.set('io', io);
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+io.use(socketAuth); 
 
-  // Join a personal room with user ID
-  socket.on('join', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room ${userId}`);
-  });
+// io.on('connection', (socket) => {
+//   console.log('User connected:', socket.id);
+
+//   // Join a personal room with user ID
+//   socket.on('join', (userId) => {
+//     socket.join(userId);
+//     console.log(`User ${userId} joined room ${userId}`);
+//   });
+
+//   socket.on('disconnect', () => {
+//     console.log('User disconnected:', socket.id);
+//   });
+// });
+
+io.on('connection', (socket) => {
+  console.log(`✅ Authenticated: ${socket.user.name} (${socket.user._id})`);
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log(`❌ Disconnected: ${socket.user.name}`);
   });
 });
 
