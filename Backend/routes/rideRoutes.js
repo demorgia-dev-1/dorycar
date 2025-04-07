@@ -76,20 +76,43 @@ router.get('/', auth, async (req, res) => {
       filter.destination = { $regex: new RegExp(destination, 'i') };
     }
 
-    if (date) {
-      // Convert date string to Date object and create range for the entire day
-      const searchDate = new Date(date);
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
+    // if (date) {
+    //   // Convert date string to Date object and create range for the entire day
+    //   const searchDate = new Date(date);
       
+    //   const nextDay = new Date(searchDate);
+    //   nextDay.setDate(nextDay.getDate() + 1);
+      
+    //   filter.date = {
+    //     $gte: searchDate,
+    //     $lt: nextDay
+    //   };
+    // }
+
+    if (date) {
+      // Convert local date string to midnight UTC
+      const searchDate = new Date(date);
+      const utcStart = new Date(Date.UTC(
+        searchDate.getFullYear(),
+        searchDate.getMonth(),
+        searchDate.getDate()
+      ));
+    
+      const utcEnd = new Date(Date.UTC(
+        searchDate.getFullYear(),
+        searchDate.getMonth(),
+        searchDate.getDate() + 1
+      ));
+    
       filter.date = {
-        $gte: searchDate,
-        $lt: nextDay
+        $gte: utcStart,
+        $lt: utcEnd
       };
     }
     
+    
 
-    filter.status = { $in: ['pending', 'accepted'] };
+    filter.status = { $in: ['pending', 'accepted', 'started', 'completed', 'cancelled'] };
 
     const rides = await Ride.find(filter)
       // .populate('creator', 'name')
@@ -98,7 +121,7 @@ router.get('/', auth, async (req, res) => {
       .populate('acceptor', 'name')
       .populate('interestedUsers.user', 'name')
       .sort({ createdAt: -1 })
-      .lean(); //  Optional performance boost
+      // .lean(); //  Optional performance boost
 
     res.json(rides);
   } catch (error) {
@@ -183,6 +206,37 @@ router.post('/:rideId/accept/:userId', auth, async (req, res) => {
     res.status(500).json({ message: 'Error accepting ride', error: error.message });
   }
 });
+
+// Start a ride
+router.put('/:rideId/start', auth, async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.rideId);
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.creator.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Only ride creator can start the ride' });
+    }
+
+    if (ride.status !== 'accepted') {
+      return res.status(400).json({ message: 'Only accepted rides can be started' });
+    }
+
+    ride.status = 'started';
+ride.startedAt = new Date();  // ✅ setting startedAt here
+console.log('Saving ride with startedAt:', ride.startedAt);
+await ride.save();
+
+    req.app.get('io').emit('ride-updated', ride);
+
+    res.json(ride);
+  } catch (error) {
+    res.status(500).json({ message: 'Error starting ride', error: error.message });
+  }
+});
+
 
 // router.post('/:rideId/accept/:userId', auth, async (req, res) => {
 //   try {
@@ -303,19 +357,42 @@ router.get('/:rideId/messages', auth, async (req, res) => {
 
 // Search rides by criteria
 // Add this route to your existing rideRoutes.js
-router.get('/search', async (req, res) => {
-  const {
-    origin,
-    destination,
-    date,
-    seats,
-    maxPrice,
-    sortBy,
-    filterBy
-  } = req.query;
-  
-  // Advanced search logic with filters and sorting
+router.get('/search', auth, async (req, res) => {
+  try {
+    const { origin, destination, date } = req.query;
+
+    const filter = {
+      status: { $in: ['pending', 'accepted', 'started'] } // ✅ Only active rides
+    };
+
+    if (origin) {
+      filter.origin = { $regex: new RegExp(origin, 'i') };
+    }
+
+    if (destination) {
+      filter.destination = { $regex: new RegExp(destination, 'i') };
+    }
+
+    if (date) {
+      const searchDate = new Date(date);
+      const utcStart = new Date(Date.UTC(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate()));
+      const utcEnd = new Date(Date.UTC(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate() + 1));
+      filter.date = { $gte: utcStart, $lt: utcEnd };
+    }
+
+    const rides = await Ride.find(filter)
+      .populate('creator', 'name profileImage phone gender emergencyContact preferredCommunication ridePreference vehicle averageRating ratings')
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json(rides);
+  } catch (error) {
+    console.error('Error in /api/rides/search:', error.message);
+    res.status(500).json({ message: 'Error fetching searched rides', error: error.message });
+  }
 });
+
 
 // Get user's rides (created, accepted, and interested)
 router.get('/my-rides', auth, async (req, res) => {
@@ -356,11 +433,18 @@ router.put('/:rideId/complete', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only ride creator can complete the ride' });
     }
 
-    if (ride.status !== 'accepted') {
-      return res.status(400).json({ message: 'Only accepted rides can be completed' });
+    // if (ride.status !== 'accepted') {
+    //   return res.status(400).json({ message: 'Only accepted rides can be completed' });
+    // }
+
+    if (ride.status !== 'started') {
+      return res.status(400).json({ message: 'Only started rides can be completed' });
     }
 
     ride.status = 'completed';
+    ride.completedAt = new Date(); 
+
+    // ride.status = 'completed';
     await ride.save();
     req.app.get('io').emit('ride-updated', ride);
 
@@ -388,6 +472,9 @@ router.put('/:rideId/cancel', auth, async (req, res) => {
     }
 
     ride.status = 'cancelled';
+    ride.cancelledAt = new Date(); 
+    ride.cancellationReason = req.body.cancellationReason || 'No reason provided';
+
     await ride.save();
     req.app.get('io').emit('ride-updated', ride);
 

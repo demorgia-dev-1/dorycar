@@ -30,8 +30,8 @@ export const rideService = {
   //   return response.data;
   // },
 
-  searchRides: async (searchData) => {
-    const response = await api.get(`/rides`, { params: searchData });
+  searchRides: async () => {
+    const response = await api.get(`/rides/search`);
     return response.data;
   },
 
@@ -45,13 +45,18 @@ export const rideService = {
     return response.data;
   },
 
+  startRide: async(rideId) => {
+    const response = await api.put(`/rides/${rideId}/start`);
+    return response.data;
+  },
+
   expressInterest: async (rideId) => {
     const response = await api.post(`/rides/${rideId}/interest`);
     return response.data;
   },
 
-  cancelRide: async (rideId) => {
-    const response = await api.put(`/rides/${rideId}/cancel`);
+  cancelRide: async (rideId, cancellationReason) => {
+    const response = await api.put(`/rides/${rideId}/cancel`, {cancellationReason});
     return response.data;
   },
 

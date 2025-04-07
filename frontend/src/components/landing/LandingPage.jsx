@@ -31,8 +31,12 @@ import { Typewriter } from "react-simple-typewriter";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { rideService } from "../../services/api";
-import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -59,31 +63,30 @@ const LandingPage = () => {
   const handleSearch = async () => {
     try {
       const hasSearch =
-        searchParams.from.trim() ||
-        searchParams.to.trim() ||
-        searchParams.date;
-  
+        searchParams.from.trim() || searchParams.to.trim() || searchParams.date;
+
       if (!hasSearch) {
         toast.warn("Please fill in the search field");
         setSearchResults([]);
         setShowResults(false);
         return;
       }
-  
+
       const params = {};
-  
+
       if (searchParams.from.trim()) {
         params.origin = searchParams.from.trim();
       }
-  
+
       if (searchParams.to.trim()) {
         params.destination = searchParams.to.trim();
       }
-  
+
       if (searchParams.date) {
-        params.date = new Date(searchParams.date).toISOString().split("T")[0];
+        // params.date = new Date(searchParams.date).toISOString().split("T")[0];
+        params.date = new Date(searchParams.date).toISOString();
       }
-  
+
       const results = await rideService.searchRides(params);
       setSearchResults(results);
       setShowResults(true);
@@ -343,11 +346,9 @@ const LandingPage = () => {
         {showResults && (
           <Container maxWidth="md" sx={{ my: 4 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Available Rides
-              </Typography>
+              
               <Grid container spacing={2}>
-                {searchResults.map((ride) => (
+                {/* {searchResults.map((ride) => (
                   <Grid item xs={12} key={ride._id}>
                     <Card
                       onClick={() => setSelectedRide(ride)}
@@ -387,104 +388,291 @@ const LandingPage = () => {
                       </CardContent>
                     </Card>
                   </Grid>
-                ))}
-                {selectedRide && (
-  <Dialog open={true} onClose={() => setSelectedRide(null)} fullWidth maxWidth="md">
-  {/* {console.log("🧾 Selected Ride:", selectedRide)} */}
-    <DialogTitle>Ride Details</DialogTitle>
-    <DialogContent dividers>
-      <Box display="flex" alignItems="center" gap={2} mb={2}>
-        <Avatar src={selectedRide.creator?.profileImage} />
-        <Box sx={{textTransform: "capitalize"}}>
-        <Typography fontWeight="bold">{selectedRide.creator?.name}</Typography>
-          <Typography variant="body2">
-            ⭐ {selectedRide.creator?.averageRating?.toFixed(1) || "N/A"} ({selectedRide.creator?.ratings?.length || 0} rides)
-          </Typography>
-          
-        </Box>
-        
-      </Box>
-
-      <Box sx={{textTransform: "capitalize"}}>
-          <Typography ><strong>Gender:</strong> {selectedRide.creator?.gender}</Typography>
-          <Typography><strong>Contact: </strong>{selectedRide.creator?.phone}</Typography>
-          <Typography><strong>Emergency Contact:</strong> {selectedRide.creator?.emergencyContact}</Typography>
+                ))} */}
+                {searchResults.length > 0 ? (
+  searchResults.map((ride) => (
+    <Grid item xs={12} key={ride._id}>
+    <Typography variant="h6" gutterBottom>
+                Available Rides
+              </Typography>
+      <Card
+        onClick={() => setSelectedRide(ride)}
+        sx={{ cursor: "pointer" }}
+      >
+        <CardContent>
+          <Chip
+            label={ride.status}
+            color={
+              ride.status === "completed"
+                ? "success"
+                : ride.status === "pending"
+                ? "warning"
+                : "primary"
+            }
+            size="small"
+          />
+          <Box display="flex" alignItems="center" gap={2}>
+            <Avatar src={ride.creator?.profileImage} />
           </Box>
-          <Divider sx={{ my: 2 }} />
-      {selectedRide.creator?.vehicle ? (
-
-        <Box sx={{textTransform: "capitalize"}}>
-        <Typography variant="body2"><strong>Car: </strong>{selectedRide.creator.vehicle.make}</Typography>
-        <Typography><strong>Model: </strong>{selectedRide.creator.vehicle.model}</Typography>
-        <Typography><strong>color:</strong> {selectedRide.creator.vehicle.color}</Typography>
-        <Typography><strong>VIN: </strong>{selectedRide.creator.vehicle.vin}</Typography>
-        <Typography><strong>Registration:</strong> {selectedRide.creator.vehicle.registration}</Typography>
-        <Typography><strong>Year:</strong> {selectedRide.creator.vehicle.year}</Typography>
-        <Typography><strong>Fuel type:</strong> {selectedRide.creator.vehicle.fuel}</Typography>
-
-
-        </Box>
-      ) : (
-        <Typography variant="body2" color="text.secondary">Vehicle info not available</Typography>
-      )}
-      <Divider sx={{ my: 2 }} />
-      <Typography mt={2}><strong>From:</strong> {selectedRide.origin}</Typography>
-      <Typography><strong>To:</strong> {selectedRide.destination}</Typography>
-      <Typography><strong>Price:</strong> ₹{selectedRide.price}</Typography>
-      <Typography><strong>Departure Time:</strong> {selectedRide.departureTime || 'Not specified'}</Typography>
-      <Typography><strong>Arrival Time:</strong> {selectedRide. arrivalTime || 'Not specified'}</Typography>
-
-      {selectedRide.stops?.length > 0 && (
-        <Typography><strong>Stops:</strong> {selectedRide.stops.join(", ")}</Typography>
-      )}
-
-      <Divider sx={{ my: 2 }} />
-      <Typography><strong>Fare per Seat:</strong> ₹{selectedRide.price}</Typography>
-      {/* <Typography><strong>Payment Methods:</strong> {selectedRide.paymentMethods?.join(", ") || "Not specified"}</Typography> */}
-      <Typography>
-  <strong>Payment Methods:</strong>{" "}
-  {Array.isArray(selectedRide.paymentMethods) && selectedRide.paymentMethods.length > 0
-    ? selectedRide.paymentMethods.join(", ")
-    : "Not specified"}
-</Typography>
-
-
-
-
-
-      {selectedRide.fareSplitShown && (
-        <Typography color="success.main">Fare Split Available</Typography>
-      )}
-
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="subtitle2">Preferences:</Typography>
-      <ul>
-        <li><strong>AC: </strong>{selectedRide.preference?.ac ? " AC" : " No AC"}</li>
-        <li><strong>Smoking Allowed: </strong>{selectedRide.preferences?.smoking ? "Smoking Allowed" : " No Smoking"}</li>
-        <li><strong>Music Allowed: </strong>{selectedRide.preferences?.music ? "Music Allowed" : " No Music"}</li>
-        <li><strong>Luggage Allowed: </strong>{selectedRide.preferences?.luggage ? "Luggage Allowed" : " No Luggage"}</li>
-        <strong>Women-only ride: </strong> {selectedRide.preferences?.womenOnly && <li>Women-only ride</li>}
-      </ul>
-
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="subtitle2">Verifications:</Typography>
-      <ul>
-        <li><strong>ID: </strong>{selectedRide.verified?.id ? "ID Verified" : " ID Not Verified"}</li>
-        <li><strong>Phone: </strong>{selectedRide.verified?.phone ? " Phone Verified" : " Phone Not Verified"}</li>
-        <li><strong>License: </strong>{selectedRide.verified?.license ? " License Verified" : " License Not Verified"}</li>
-        <li><strong>Emergency Contact: </strong>{selectedRide.verified?.emergencyContact ? " Emergency Contact Available" : "Not Provided"}</li>
-      </ul>
-    </DialogContent>
-
-    <DialogActions>
-      <Button onClick={() => handleBookRide(selectedRide._id)} variant="contained" color="primary">Book</Button>
-      <Button onClick={() => handleChatWithDriver(selectedRide.creator._id)} variant="outlined">Chat</Button>
-      <Button onClick={() => handleViewMap(selectedRide.origin, selectedRide.destination)} variant="outlined">Map</Button>
-      <Button onClick={() => handleShareRide(selectedRide)} variant="text">Share</Button>
-      <Button onClick={() => setSelectedRide(null)} color="error">Close</Button>
-    </DialogActions>
-  </Dialog>
+          <Typography>{ride.creator.name}</Typography>
+          <Typography variant="body2">
+            ⭐ {ride.creator?.averageRating?.toFixed(1) || "N/A"}{" "}
+            ({ride.creator?.ratings?.length || 0} rides)
+          </Typography>
+          <Typography variant="h6">
+            {ride.origin} → {ride.destination}
+          </Typography>
+          <Typography>
+            Date: {new Date(ride.date).toLocaleDateString()}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Time: {new Date(ride.date).toLocaleTimeString()}
+          </Typography>
+          <Typography>Price per Seat: ₹{ride.price}</Typography>
+          <Typography>Available Seats: {ride.seats}</Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+  ))
+) : (
+  <Grid item xs={12}>
+    <Typography
+      variant="h6"
+      align="center"
+      color="text.secondary"
+      sx={{ mt: 4 }}
+    >
+      No ride matches your search.
+    </Typography>
+  </Grid>
 )}
+
+                {selectedRide && (
+                  <Dialog
+                    open={true}
+                    onClose={() => setSelectedRide(null)}
+                    fullWidth
+                    maxWidth="md"
+                  >
+                    {/* {console.log("🧾 Selected Ride:", selectedRide)} */}
+                    <DialogTitle>Ride Details</DialogTitle>
+                    <DialogContent dividers>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <Avatar src={selectedRide.creator?.profileImage} />
+                        <Box sx={{ textTransform: "capitalize" }}>
+                          <Typography fontWeight="bold">
+                            {selectedRide.creator?.name}
+                          </Typography>
+                          <Typography variant="body2">
+                            ⭐{" "}
+                            {selectedRide.creator?.averageRating?.toFixed(1) ||
+                              "N/A"}{" "}
+                            ({selectedRide.creator?.ratings?.length || 0} rides)
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ textTransform: "capitalize" }}>
+                        <Typography>
+                          <strong>Gender:</strong>{" "}
+                          {selectedRide.creator?.gender}
+                        </Typography>
+                        <Typography>
+                          <strong>Contact: </strong>
+                          {selectedRide.creator?.phone}
+                        </Typography>
+                        <Typography>
+                          <strong>Emergency Contact:</strong>{" "}
+                          {selectedRide.creator?.emergencyContact}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ my: 2 }} />
+                      {selectedRide.creator?.vehicle ? (
+                        <Box sx={{ textTransform: "capitalize" }}>
+                          <Typography variant="body2">
+                            <strong>Car: </strong>
+                            {selectedRide.creator.vehicle.make}
+                          </Typography>
+                          <Typography>
+                            <strong>Model: </strong>
+                            {selectedRide.creator.vehicle.model}
+                          </Typography>
+                          <Typography>
+                            <strong>color:</strong>{" "}
+                            {selectedRide.creator.vehicle.color}
+                          </Typography>
+                          <Typography>
+                            <strong>VIN: </strong>
+                            {selectedRide.creator.vehicle.vin}
+                          </Typography>
+                          <Typography>
+                            <strong>Registration:</strong>{" "}
+                            {selectedRide.creator.vehicle.registration}
+                          </Typography>
+                          <Typography>
+                            <strong>Year:</strong>{" "}
+                            {selectedRide.creator.vehicle.year}
+                          </Typography>
+                          <Typography>
+                            <strong>Fuel type:</strong>{" "}
+                            {selectedRide.creator.vehicle.fuel}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Vehicle info not available
+                        </Typography>
+                      )}
+                      <Divider sx={{ my: 2 }} />
+                      <Typography mt={2}>
+                        <strong>From:</strong> {selectedRide.origin}
+                      </Typography>
+                      <Typography>
+                        <strong>To:</strong> {selectedRide.destination}
+                      </Typography>
+                      <Typography>
+                        <strong>Price:</strong> ₹{selectedRide.price}
+                      </Typography>
+                      <Typography>
+                        <strong>Departure Time:</strong>{" "}
+                        {selectedRide.departureTime || "Not specified"}
+                      </Typography>
+                      <Typography>
+                        <strong>Arrival Time:</strong>{" "}
+                        {selectedRide.arrivalTime || "Not specified"}
+                      </Typography>
+
+                      {selectedRide.stops?.length > 0 && (
+                        <Typography>
+                          <strong>Stops:</strong>{" "}
+                          {selectedRide.stops.join(", ")}
+                        </Typography>
+                      )}
+
+                      <Divider sx={{ my: 2 }} />
+                      <Typography>
+                        <strong>Fare per Seat:</strong> ₹{selectedRide.price}
+                      </Typography>
+                      {/* <Typography><strong>Payment Methods:</strong> {selectedRide.paymentMethods?.join(", ") || "Not specified"}</Typography> */}
+                      <Typography>
+                        <strong>Payment Methods:</strong>{" "}
+                        {Array.isArray(selectedRide.paymentMethods) &&
+                        selectedRide.paymentMethods.length > 0
+                          ? selectedRide.paymentMethods.join(", ")
+                          : "Not specified"}
+                      </Typography>
+
+                      {selectedRide.fareSplitShown && (
+                        <Typography color="success.main">
+                          Fare Split Available
+                        </Typography>
+                      )}
+
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="subtitle2">Preferences:</Typography>
+                      <ul>
+                        <li>
+                          <strong>AC: </strong>
+                          {selectedRide.preference?.ac ? " AC" : " No AC"}
+                        </li>
+                        <li>
+                          <strong>Smoking Allowed: </strong>
+                          {selectedRide.preferences?.smoking
+                            ? "Smoking Allowed"
+                            : " No Smoking"}
+                        </li>
+                        <li>
+                          <strong>Music Allowed: </strong>
+                          {selectedRide.preferences?.music
+                            ? "Music Allowed"
+                            : " No Music"}
+                        </li>
+                        <li>
+                          <strong>Luggage Allowed: </strong>
+                          {selectedRide.preferences?.luggage
+                            ? "Luggage Allowed"
+                            : " No Luggage"}
+                        </li>
+                        <strong>Women-only ride: </strong>{" "}
+                        {selectedRide.preferences?.womenOnly && (
+                          <li>Women-only ride</li>
+                        )}
+                      </ul>
+
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="subtitle2">
+                        Verifications:
+                      </Typography>
+                      <ul>
+                        <li>
+                          <strong>ID: </strong>
+                          {selectedRide.verified?.id
+                            ? "ID Verified"
+                            : " ID Not Verified"}
+                        </li>
+                        <li>
+                          <strong>Phone: </strong>
+                          {selectedRide.verified?.phone
+                            ? " Phone Verified"
+                            : " Phone Not Verified"}
+                        </li>
+                        <li>
+                          <strong>License: </strong>
+                          {selectedRide.verified?.license
+                            ? " License Verified"
+                            : " License Not Verified"}
+                        </li>
+                        <li>
+                          <strong>Emergency Contact: </strong>
+                          {selectedRide.verified?.emergencyContact
+                            ? " Emergency Contact Available"
+                            : "Not Provided"}
+                        </li>
+                      </ul>
+                    </DialogContent>
+
+                    <DialogActions>
+                      <Button
+                        onClick={() => handleBookRide(selectedRide._id)}
+                        variant="contained"
+                        color="primary"
+                      >
+                        Book
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          handleChatWithDriver(selectedRide.creator._id)
+                        }
+                        variant="outlined"
+                      >
+                        Chat
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          handleViewMap(
+                            selectedRide.origin,
+                            selectedRide.destination
+                          )
+                        }
+                        variant="outlined"
+                      >
+                        Map
+                      </Button>
+                      <Button
+                        onClick={() => handleShareRide(selectedRide)}
+                        variant="text"
+                      >
+                        Share
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedRide(null)}
+                        color="error"
+                      >
+                        Close
+                      </Button>
+                    </DialogActions>
+                  </Dialog>
+                )}
               </Grid>
             </CardContent>
           </Container>

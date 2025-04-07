@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Grid,
@@ -9,11 +9,22 @@ import {
   Box,
   Card,
   CardContent,
-  CardActions
-} from '@mui/material';
-import { useAuth } from '../context/AuthContext';
-import { rideService } from '../services/api';
-import { toast } from 'react-toastify';
+  CardActions,
+} from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
+} from "@mui/material";
+
+import { useAuth } from "../context/AuthContext";
+import { rideService } from "../services/api";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,51 +32,112 @@ const Dashboard = () => {
   const [userRides, setUserRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const cancellationReasons = [
+    "Change of plans",
+    "Vehicle issue",
+    "Passenger did not respond",
+    "Emergency",
+    "Other"
+  ];
+  
+  const [openCancelModal, setOpenCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [rideToCancel, setRideToCancel] = useState(null);
+  const [customReason, setCustomReason] = useState("");
+
+  
+
   useEffect(() => {
     fetchUserRides();
   }, []);
 
   const fetchUserRides = async () => {
     try {
-      const rides = await rideService.getRides();
-      // setUserRides(rides.filter(ride => 
+      // const rides = await rideService.getRides();
+      // setUserRides(rides.filter(ride =>
       //   ride.creator === user._id || ride.acceptor === user._id
       // ));
 
-      setUserRides(
-        rides.filter(
-          (ride) =>
-            ride.creator?._id === user._id || ride.creator === user._id || 
-            ride.acceptor?._id === user._id || ride.acceptor === user._id
-        )
-      );
-      
+      const rides = await rideService.getRides();
+const filtered = rides.filter(
+  (ride) =>
+    (ride.creator?._id === user._id || ride.creator === user._id ||
+     ride.acceptor?._id === user._id || ride.acceptor === user._id)
+     
+);
+console.log("Ride object:", rides);
+
+setUserRides(filtered);
+
+
+      // setUserRides(
+      //   rides.filter(
+      //     (ride) =>
+      //       ride.creator?._id === user._id ||
+      //       ride.creator === user._id ||
+      //       ride.acceptor?._id === user._id ||
+      //       ride.acceptor === user._id
+      //   )
+      // );
     } catch (error) {
-      console.error('Error fetching rides:', error);
-      toast.error('Failed to fetch rides');
+      console.error("Error fetching rides:", error);
+      toast.error("Failed to fetch rides");
     } finally {
       setLoading(false);
     }
   };
 
+  const openCancellationDialog = (rideId) => {
+    setRideToCancel(rideId);
+    setOpenCancelModal(true);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelReason) {
+      toast.error("Please select a reason");
+      return;
+    }
+    try {
+      const reasonToSend = cancelReason === "Other" ? customReason.trim() : cancelReason;
+      await rideService.cancelRide(rideToCancel, reasonToSend);
+      toast.success("Ride cancelled successfully");
+      setOpenCancelModal(false);
+      setCancelReason("");
+      setRideToCancel(null);
+      fetchUserRides();
+    } catch (error) {
+      toast.error("Failed to cancel ride");
+    }
+  };
+  
+
   const handleStatusChange = async (rideId, action, userId) => {
     try {
       switch (action) {
-        case 'accept':
+        case "accept":
           // await rideService.acceptInterest(rideId, user._id);
 
           await rideService.acceptRide(rideId, userId);
           break;
-        case 'cancel':
-          await rideService.cancelRide(rideId);
+        case "cancel":
+          // await rideService.cancelRide(rideId); 
+  const reason = prompt("Please provide a reason for cancellation:");
+  await rideService.cancelRide(rideId, reason);
+
           break;
-        case 'complete':
+        case "complete":
           await rideService.completeRide(rideId);
           break;
+        case "start":
+          await rideService.startRide(rideId);
+          break;
+          
         default:
           return;
       }
       toast.success(`Ride ${action}ed successfully`);
+      toast.info(`Passengers have been notified that the ride is now ${action}ed`);
+
       fetchUserRides();
     } catch (error) {
       console.error(`Error ${action}ing ride:`, error);
@@ -73,11 +145,30 @@ const Dashboard = () => {
     }
   };
   const RideCard = ({ ride }) => {
-    const isCreator = ride.creator?._id === user._id || ride.creator === user._id;
-    // const isAcceptor = ride.acceptor?._id === user._id || ride.acceptor === user._id;  
+    const isCreator =
+      ride.creator?._id === user._id || ride.creator === user._id;
+    // const isAcceptor = ride.acceptor?._id === user._id || ride.acceptor === user._id;
+    const [elapsedTime, setElapsedTime] = useState("");
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (ride.status === "started" && ride.startedAt) {
+      const startTime = new Date(ride.startedAt).getTime();
+      timerRef.current = setInterval(() => {
+        const now = new Date().getTime();
+        const diff = now - startTime;
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        setElapsedTime(`${minutes}m ${seconds}s`);
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [ride.status, ride.startedAt]);
 
     return (
-      <Card sx={{ mb: 2, marginTop: 15 }}>
+      <Card sx={{ mb: 2, marginTop: 15, opacity: ride.status === 'cancelled' || ride.status === 'completed' ? 0.6 : 1,
+  pointerEvents: ride.status === 'cancelled' || ride.status === 'completed' ? 'none' : 'auto'
+}}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -89,11 +180,11 @@ const Dashboard = () => {
             Status: {ride.status}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Role: {isCreator ? 'Creator' : 'Acceptor'}
+            Role: {isCreator ? "Creator" : "Acceptor"}
           </Typography>
         </CardContent>
-    
-        {/* ✅ Show Interested Users for Creator */}
+
+        {/* Show Interested Users for Creator */}
         {isCreator && ride.interestedUsers?.length > 0 && (
           <Box mt={1} ml={2}>
             <Typography variant="subtitle2" gutterBottom>
@@ -102,16 +193,19 @@ const Dashboard = () => {
             {ride.interestedUsers.map((interest, index) => (
               <Box key={index} sx={{ mb: 1 }}>
                 <Typography variant="body2">
-                  {interest.user?.name || 'Unnamed User'} – Status: {interest.status}
+                  {interest.user?.name || "Unnamed User"} – Status:{" "}
+                  {interest.status}
                 </Typography>
-    
-                {interest.status === 'interested' && (
+
+                {interest.status === "interested" && (
                   <Button
                     size="small"
                     variant="contained"
                     color="primary"
                     sx={{ mt: 0.5 }}
-                    onClick={() => handleStatusChange(ride._id, 'accept', interest.user._id)}
+                    onClick={() =>
+                      handleStatusChange(ride._id, "accept", interest.user._id)
+                    }
                   >
                     Accept This User
                   </Button>
@@ -120,122 +214,233 @@ const Dashboard = () => {
             ))}
           </Box>
         )}
-    
         <CardActions>
-          {/* ✅ Show Complete/Cancel for accepted rides */}
-          {ride.status === 'accepted' && (
-            <Button
-              size="small"
-              color="success"
-              onClick={() => handleStatusChange(ride._id, 'complete')}
-            >
-              Complete Ride
-            </Button>
-          )}
-          {ride.status !== 'completed' && (
-            <Button
-              size="small"
-              color="error"
-              onClick={() => handleStatusChange(ride._id, 'cancel')}
-            >
-              Cancel Ride
-            </Button>
-          )}
-        </CardActions>
+  {/* Show Start Ride button only when ride is accepted */}
+  {ride.status === 'accepted' && (
+    <Button
+      size="small"
+      color="primary"
+      onClick={() => handleStatusChange(ride._id, 'start')}
+    >
+      Start Ride
+    </Button>
+  )}
+
+  {/* Show Complete Ride button only when ride is started */}
+  {ride.status === 'started' && (
+    <Button
+      size="small"
+      color="success"
+      onClick={() => handleStatusChange(ride._id, 'complete')}
+    >
+      Complete Ride
+    </Button>
+  )}
+
+  {ride.status === "started" && (
+  <Button
+    size="small"
+    color="info"
+    onClick={() =>
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&origin=${ride.origin}&destination=${ride.destination}`,
+        "_blank"
+      )
+    }
+  >
+    View Live Map
+  </Button>
+)}
+
+
+  {/* Always allow cancel unless completed */}
+  {ride.status !== 'completed' && ride.status !== 'cancelled' && (
+    /* <Button
+      size="small"
+      color="error"
+      onClick={() => handleStatusChange(ride._id, 'cancel')}
+    >
+      Cancel Ride
+    </Button> */
+    <Button
+  size="small"
+  color="error"
+  onClick={() => openCancellationDialog(ride._id)}
+>
+  Cancel Ride
+</Button>
+  )}
+
+  
+
+
+  {ride.status === 'completed' && (
+    <Typography variant="body2" color="primary">
+  Ride Completed At:{" "}
+  {ride.completedAt
+    ? new Date(ride.completedAt).toLocaleTimeString()
+    : "Not available"}
+</Typography>
+  )}
+
+  {ride.status === 'started' &&  (
+  <Typography variant="body2" color="primary">
+  
+  Ride Started At:{" "}
+  {ride.startedAt
+    ? new Date(ride.startedAt).toLocaleTimeString()
+    : "Not available"}
+  </Typography>
+)}
+
+{ride.status === 'cancelled' && (
+  <>
+    <Typography variant="body2" color="error">
+      Ride Cancelled At: {" "}  
+      {ride.cancelledAt ? new Date(ride.cancelledAt).toLocaleString()
+        : "Not available"}
+      
+    </Typography>
+    <Typography variant="body2" color="error">
+      Cancellation Reason: {ride.cancellationReason || "Not provided"}
+    </Typography>
+  </>
+)}
+
+
+{ride.status === "started" && elapsedTime && (
+  <Typography variant="body2" color="secondary">
+    Duration: {elapsedTime}
+  </Typography>
+)}
+
+</CardActions>
+
       </Card>
     );
-    
 
-//     return (
-//       <Card sx={{ mb:2, marginTop:15}}>
-//         <CardContent>
-//           <Typography variant="h6" gutterBottom>
-//             {ride.origin} → {ride.destination}
-//           </Typography>
-//           <Typography variant="body2" color="text.secondary">
-//             Date: {new Date(ride.date).toLocaleDateString()}
-//           </Typography>
-//           <Typography variant="body2" color="text.secondary">
-//             Status: {ride.status}
-//           </Typography>
-//           <Typography variant="body2" color="text.secondary">
-//             Role: {isCreator ? 'Creator' : 'Acceptor'}
-//           </Typography>
-//         </CardContent>
-//         <CardActions>
-//         {/* If current user is the creator, show accept buttons for interested users */}
-// {isCreator && ride.interestedUsers?.length > 0 && (
-//   <Box mt={2}>
-//     <Typography variant="body2" fontWeight="bold">
-//       Interested Users:
-//     </Typography>
-//     {ride.interestedUsers.map((interest, index) => (
-//       <Box key={index} sx={{ ml: 2, mb: 1 }}>
-//         <Typography variant="body2">
-//           {interest.user?.name || 'Unnamed User'} - Status: {interest.status}
-//         </Typography>
+    //     return (
+    //       <Card sx={{ mb:2, marginTop:15}}>
+    //         <CardContent>
+    //           <Typography variant="h6" gutterBottom>
+    //             {ride.origin} → {ride.destination}
+    //           </Typography>
+    //           <Typography variant="body2" color="text.secondary">
+    //             Date: {new Date(ride.date).toLocaleDateString()}
+    //           </Typography>
+    //           <Typography variant="body2" color="text.secondary">
+    //             Status: {ride.status}
+    //           </Typography>
+    //           <Typography variant="body2" color="text.secondary">
+    //             Role: {isCreator ? 'Creator' : 'Acceptor'}
+    //           </Typography>
+    //         </CardContent>
+    //         <CardActions>
+    //         {/* If current user is the creator, show accept buttons for interested users */}
+    // {isCreator && ride.interestedUsers?.length > 0 && (
+    //   <Box mt={2}>
+    //     <Typography variant="body2" fontWeight="bold">
+    //       Interested Users:
+    //     </Typography>
+    //     {ride.interestedUsers.map((interest, index) => (
+    //       <Box key={index} sx={{ ml: 2, mb: 1 }}>
+    //         <Typography variant="body2">
+    //           {interest.user?.name || 'Unnamed User'} - Status: {interest.status}
+    //         </Typography>
 
-//         {interest.status === 'interested' && (
-//           <Button
-//             size="small"
-//             color="primary"
-//             onClick={() =>
-//               handleStatusChange(ride._id, 'accept', interest.user._id)
-//             }
-//           >
-//             Accept This User
-//           </Button>
-//         )}
-//       </Box>
-//     ))}
-//   </Box>
-// )}
+    //         {interest.status === 'interested' && (
+    //           <Button
+    //             size="small"
+    //             color="primary"
+    //             onClick={() =>
+    //               handleStatusChange(ride._id, 'accept', interest.user._id)
+    //             }
+    //           >
+    //             Accept This User
+    //           </Button>
+    //         )}
+    //       </Box>
+    //     ))}
+    //   </Box>
+    // )}
 
-//           {/* {ride.status === 'pending' && !isCreator && (
-//             <Button
-//               size="small"
-//               color="primary"
-//               onClick={() => handleStatusChange(ride._id, 'accept')}
-//             >
-//               Accept Ride
-//             </Button>
-//           )} */}
-//           {ride.status === 'accepted' && (
-//             <Button
-//               size="small"
-//               color="success"
-//               onClick={() => handleStatusChange(ride._id, 'complete')}
-//             >
-//               Complete Ride
-//             </Button>
-//           )}
-//           {ride.status !== 'completed' && (
-//             <Button
-//               size="small"
-//               color="error"
-//               onClick={() => handleStatusChange(ride._id, 'cancel')}
-//             >
-//               Cancel Ride
-//             </Button>
-//           )}
-//         </CardActions>
-//       </Card>
-//     );
+    //           {/* {ride.status === 'pending' && !isCreator && (
+    //             <Button
+    //               size="small"
+    //               color="primary"
+    //               onClick={() => handleStatusChange(ride._id, 'accept')}
+    //             >
+    //               Accept Ride
+    //             </Button>
+    //           )} */}
+    //           {ride.status === 'accepted' && (
+    //             <Button
+    //               size="small"
+    //               color="success"
+    //               onClick={() => handleStatusChange(ride._id, 'complete')}
+    //             >
+    //               Complete Ride
+    //             </Button>
+    //           )}
+    //           {ride.status !== 'completed' && (
+    //             <Button
+    //               size="small"
+    //               color="error"
+    //               onClick={() => handleStatusChange(ride._id, 'cancel')}
+    //             >
+    //               Cancel Ride
+    //             </Button>
+    //           )}
+    //         </CardActions>
+    //       </Card>
+    //     );
   };
+
+  <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
+  <DialogTitle>Select Cancellation Reason</DialogTitle>
+  <DialogContent>
+    <FormControl fullWidth>
+      <InputLabel>Reason</InputLabel>
+      <Select
+        value={cancelReason}
+        onChange={(e) => setCancelReason(e.target.value)}
+        label="Reason"
+      >
+        {cancellationReasons.map((reason, index) => (
+          <MenuItem key={index} value={reason}>
+            {reason}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
+    <Button color="error" onClick={confirmCancel}>
+      Confirm Cancel
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 14, mb: 4 }}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={3}
+            >
               <Typography variant="h4" component="h1">
                 Welcome, {user?.name}!
               </Typography>
               <Button
                 variant="contained"
                 color="primary"
-                onClick={() => navigate('/rides/create')}
+                onClick={() => navigate("/rides/create")}
               >
                 Create New Ride
               </Button>
@@ -244,13 +449,11 @@ const Dashboard = () => {
             <Typography variant="h5" gutterBottom>
               Your Rides
             </Typography>
-            
+
             {loading ? (
               <Typography>Loading rides...</Typography>
             ) : userRides.length > 0 ? (
-              userRides.map((ride) => (
-                <RideCard key={ride._id} ride={ride} />
-              ))
+              userRides.map((ride) => <RideCard key={ride._id} ride={ride} />)
             ) : (
               <Typography color="text.secondary">
                 No rides found. Create a new ride or accept an available one!
@@ -259,6 +462,56 @@ const Dashboard = () => {
           </Paper>
         </Grid>
       </Grid>
+      <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
+  <DialogTitle>Select Cancellation Reason</DialogTitle>
+  <DialogContent>
+    <FormControl fullWidth sx={{ mt: 1 }}>
+      <InputLabel>Reason</InputLabel>
+      <Select
+        value={cancelReason}
+        onChange={(e) => {
+          setCancelReason(e.target.value);
+          if (e.target.value !== "Other") {
+            setCustomReason(""); // reset if not "Other"
+          }
+        }}
+        label="Reason"
+      >
+        {cancellationReasons.map((reason, index) => (
+          <MenuItem key={index} value={reason}>
+            {reason}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {cancelReason === "Other" && (
+      <FormControl fullWidth sx={{ mt: 2 }}>
+        {/* <InputLabel htmlFor="custom-reason"></InputLabel> */}
+        <input
+          id="custom-reason"
+          type="text"
+          value={customReason}
+          onChange={(e) => setCustomReason(e.target.value)}
+          placeholder="Please enter your reason"
+          style={{
+            padding: "10px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            marginTop: "8px"
+          }}
+        />
+      </FormControl>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
+    <Button color="error" onClick={confirmCancel}>
+      Confirm Cancel
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Container>
   );
 };

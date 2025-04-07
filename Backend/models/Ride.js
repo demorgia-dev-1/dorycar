@@ -147,9 +147,10 @@ const rideSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'completed', 'cancelled'],
+    enum: ['pending', 'accepted', 'started' ,'completed', 'cancelled'],
     default: 'pending'
   },
+
   interestedUsers: [{
     user: {
       type: Schema.Types.ObjectId,
@@ -160,10 +161,13 @@ const rideSchema = new Schema({
       enum: ['interested', 'accepted', 'rejected'],
       default: 'interested'
     },
+
     timestamp: {
       type: Date,
       default: Date.now
-    }
+    },
+
+
   }],
   acceptor: {
     type: Schema.Types.ObjectId,
@@ -181,6 +185,9 @@ const rideSchema = new Schema({
   },
   additionalNotes: {
     type: String
+  },
+  startedAt: {
+    type: Date
   },
   completedAt: {
     type: Date
