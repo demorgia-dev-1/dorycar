@@ -1,7 +1,4 @@
-import { useState, useEffect } from 'react';
-import {
-  Box
-} from "@mui/material";
+
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -16,7 +13,13 @@ import RideList from './components/rides/RideList';
 import PrivateRoute from './components/PrivateRoute';
 import theme from './theme';
 import Profile from './components/Profile';
+import useRideNotifications from './hooks/useRideNotifications'; 
+import { ToastContainer } from 'react-toastify';
+
+
+
 function App() {
+  useRideNotifications();
   return (
 <>
       <ThemeProvider theme={theme}>
@@ -39,6 +42,7 @@ function App() {
           </Routes>
         </div>
       </LocalizationProvider>
+      <ToastContainer />
     </ThemeProvider>
     {/* </div> */}
 </>

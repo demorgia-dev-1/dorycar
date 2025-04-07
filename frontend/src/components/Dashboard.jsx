@@ -10,8 +10,6 @@ import {
   Card,
   CardContent,
   CardActions,
-} from "@mui/material";
-import {
   Dialog,
   DialogTitle,
   DialogContent,
@@ -19,12 +17,13 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
 } from "@mui/material";
 
 import { useAuth } from "../context/AuthContext";
 import { rideService } from "../services/api";
 import { toast } from "react-toastify";
+import socket from "../services/socket";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -37,19 +36,47 @@ const Dashboard = () => {
     "Vehicle issue",
     "Passenger did not respond",
     "Emergency",
-    "Other"
+    "Other",
   ];
-  
+
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [rideToCancel, setRideToCancel] = useState(null);
   const [customReason, setCustomReason] = useState("");
-
-  
+  const [highlightedRideId, setHighlightedRideId] = useState(null);
 
   useEffect(() => {
-    fetchUserRides();
-  }, []);
+    fetchUserRides(); // initial fetch
+    const handleRideUpdated = (updatedRide) => {
+      const isUserInvolved =
+        updatedRide.creator?._id === user._id ||
+        updatedRide.creator === user._id ||
+        updatedRide.acceptor?._id === user._id ||
+        updatedRide.acceptor === user._id;
+
+      if (!isUserInvolved) return;
+
+      setUserRides((prevRides) => {
+        const rideIndex = prevRides.findIndex((r) => r._id === updatedRide._id);
+
+        if (rideIndex !== -1) {
+          // Replace the updated ride
+          const updated = [...prevRides];
+          updated[rideIndex] = updatedRide;
+          return updated;
+        } else {
+          // New ride added (e.g. user just accepted)
+          return [updatedRide, ...prevRides];
+        }
+      });
+      setHighlightedRideId(updatedRide._id);
+
+      setTimeout(() => setHighlightedRideId(null), 3000);
+    };
+
+    socket.on("ride-updated", handleRideUpdated);
+    return () => socket.off("ride-updated", handleRideUpdated);
+  }, [user]);
 
   const fetchUserRides = async () => {
     try {
@@ -59,16 +86,16 @@ const Dashboard = () => {
       // ));
 
       const rides = await rideService.getRides();
-const filtered = rides.filter(
-  (ride) =>
-    (ride.creator?._id === user._id || ride.creator === user._id ||
-     ride.acceptor?._id === user._id || ride.acceptor === user._id)
-     
-);
-console.log("Ride object:", rides);
+      const filtered = rides.filter(
+        (ride) =>
+          ride.creator?._id === user._id ||
+          ride.creator === user._id ||
+          ride.acceptor?._id === user._id ||
+          ride.acceptor === user._id
+      );
+      console.log("Ride object:", rides);
 
-setUserRides(filtered);
-
+      setUserRides(filtered);
 
       // setUserRides(
       //   rides.filter(
@@ -98,7 +125,8 @@ setUserRides(filtered);
       return;
     }
     try {
-      const reasonToSend = cancelReason === "Other" ? customReason.trim() : cancelReason;
+      const reasonToSend =
+        cancelReason === "Other" ? customReason.trim() : cancelReason;
       await rideService.cancelRide(rideToCancel, reasonToSend);
       toast.success("Ride cancelled successfully");
       setOpenCancelModal(false);
@@ -109,7 +137,6 @@ setUserRides(filtered);
       toast.error("Failed to cancel ride");
     }
   };
-  
 
   const handleStatusChange = async (rideId, action, userId) => {
     try {
@@ -120,9 +147,9 @@ setUserRides(filtered);
           await rideService.acceptRide(rideId, userId);
           break;
         case "cancel":
-          // await rideService.cancelRide(rideId); 
-  const reason = prompt("Please provide a reason for cancellation:");
-  await rideService.cancelRide(rideId, reason);
+          // await rideService.cancelRide(rideId);
+          const reason = prompt("Please provide a reason for cancellation:");
+          await rideService.cancelRide(rideId, reason);
 
           break;
         case "complete":
@@ -131,12 +158,14 @@ setUserRides(filtered);
         case "start":
           await rideService.startRide(rideId);
           break;
-          
+
         default:
           return;
       }
       toast.success(`Ride ${action}ed successfully`);
-      toast.info(`Passengers have been notified that the ride is now ${action}ed`);
+      toast.info(
+        `Passengers have been notified that the ride is now ${action}ed`
+      );
 
       fetchUserRides();
     } catch (error) {
@@ -145,30 +174,56 @@ setUserRides(filtered);
     }
   };
   const RideCard = ({ ride }) => {
+    const [isUpdated, setIsUpdated] = useState(false);
+
+    useEffect(() => {
+      setIsUpdated(true);
+      const timer = setTimeout(() => setIsUpdated(false), 2000);
+      return () => clearTimeout(timer);
+    }, [ride.updatedAt]); // ride has to include updatedAt field (set in backend)
+
     const isCreator =
       ride.creator?._id === user._id || ride.creator === user._id;
     // const isAcceptor = ride.acceptor?._id === user._id || ride.acceptor === user._id;
     const [elapsedTime, setElapsedTime] = useState("");
-  const timerRef = useRef(null);
+    const timerRef = useRef(null);
 
-  useEffect(() => {
-    if (ride.status === "started" && ride.startedAt) {
-      const startTime = new Date(ride.startedAt).getTime();
-      timerRef.current = setInterval(() => {
-        const now = new Date().getTime();
-        const diff = now - startTime;
-        const minutes = Math.floor(diff / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-        setElapsedTime(`${minutes}m ${seconds}s`);
-      }, 1000);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [ride.status, ride.startedAt]);
+    useEffect(() => {
+      if (ride.status === "started" && ride.startedAt) {
+        const startTime = new Date(ride.startedAt).getTime();
+        timerRef.current = setInterval(() => {
+          const now = new Date().getTime();
+          const diff = now - startTime;
+          const minutes = Math.floor(diff / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+          setElapsedTime(`${minutes}m ${seconds}s`);
+        }, 1000);
+      }
+      return () => clearInterval(timerRef.current);
+    }, [ride.status, ride.startedAt]);
 
     return (
-      <Card sx={{ mb: 2, marginTop: 15, opacity: ride.status === 'cancelled' || ride.status === 'completed' ? 0.6 : 1,
-  pointerEvents: ride.status === 'cancelled' || ride.status === 'completed' ? 'none' : 'auto'
-}}>
+      <Card
+        sx={{
+          mb: 2,
+          marginTop: 15,
+          border:
+            ride._id === highlightedRideId
+              ? "2px solid #00e676"
+              : "1px solid #ccc",
+          transition: "all 0.3s ease-in-out",
+          boxShadow:
+            ride._id === highlightedRideId ? "0 0 10px #00e676" : undefined,
+          opacity:
+            ride.status === "cancelled" || ride.status === "completed"
+              ? 0.6
+              : 1,
+          pointerEvents:
+            ride.status === "cancelled" || ride.status === "completed"
+              ? "none"
+              : "auto",
+        }}
+      >
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -215,107 +270,92 @@ setUserRides(filtered);
           </Box>
         )}
         <CardActions>
-  {/* Show Start Ride button only when ride is accepted */}
-  {ride.status === 'accepted' && (
-    <Button
-      size="small"
-      color="primary"
-      onClick={() => handleStatusChange(ride._id, 'start')}
-    >
-      Start Ride
-    </Button>
-  )}
+          {/* Show Start Ride button only when ride is accepted */}
+          {isCreator && ride.status === "accepted" && (
+            <Button
+              size="small"
+              color="primary"
+              onClick={() => handleStatusChange(ride._id, "start")}
+            >
+              Start Ride
+            </Button>
+          )}
 
-  {/* Show Complete Ride button only when ride is started */}
-  {ride.status === 'started' && (
-    <Button
-      size="small"
-      color="success"
-      onClick={() => handleStatusChange(ride._id, 'complete')}
-    >
-      Complete Ride
-    </Button>
-  )}
+          {/* Show Complete Ride button only when ride is started */}
+          {isCreator && ride.status === "started" && (
+            <Button
+              size="small"
+              color="success"
+              onClick={() => handleStatusChange(ride._id, "complete")}
+            >
+              Complete Ride
+            </Button>
+          )}
 
-  {ride.status === "started" && (
-  <Button
-    size="small"
-    color="info"
-    onClick={() =>
-      window.open(
-        `https://www.google.com/maps/dir/?api=1&origin=${ride.origin}&destination=${ride.destination}`,
-        "_blank"
-      )
-    }
-  >
-    View Live Map
-  </Button>
-)}
+          {ride.status === "started" && (
+            <Button
+              size="small"
+              color="info"
+              onClick={() =>
+                window.open(
+                  `https://www.google.com/maps/dir/?api=1&origin=${ride.origin}&destination=${ride.destination}`,
+                  "_blank"
+                )
+              }
+            >
+              View Live Map
+            </Button>
+          )}
 
+          {/* Always allow cancel unless completed */}
+          {ride.status !== "completed" && ride.status !== "cancelled" && (
+            <Button
+              size="small"
+              color="error"
+              onClick={() => openCancellationDialog(ride._id, "cancel")}
+            >
+              Cancel Ride
+            </Button>
+          )}
 
-  {/* Always allow cancel unless completed */}
-  {ride.status !== 'completed' && ride.status !== 'cancelled' && (
-    /* <Button
-      size="small"
-      color="error"
-      onClick={() => handleStatusChange(ride._id, 'cancel')}
-    >
-      Cancel Ride
-    </Button> */
-    <Button
-  size="small"
-  color="error"
-  onClick={() => openCancellationDialog(ride._id)}
->
-  Cancel Ride
-</Button>
-  )}
+          {ride.status === "completed" && (
+            <Typography variant="body2" color="primary">
+              Ride Completed At:{" "}
+              {ride.completedAt
+                ? new Date(ride.completedAt).toLocaleTimeString()
+                : "Not available"}
+            </Typography>
+          )}
 
-  
+          {ride.status === "started" && (
+            <Typography variant="body2" color="primary">
+              Ride Started At:{" "}
+              {ride.startedAt
+                ? new Date(ride.startedAt).toLocaleTimeString()
+                : "Not available"}
+            </Typography>
+          )}
 
+          {ride.status === "cancelled" && (
+            <>
+              <Typography variant="body2" color="error">
+                Ride Cancelled At:{" "}
+                {ride.cancelledAt
+                  ? new Date(ride.cancelledAt).toLocaleString()
+                  : "Not available"}
+              </Typography>
+              <Typography variant="body2" color="error">
+                Cancellation Reason: {ride.cancellationReason || "Not provided"}
+              </Typography>
+            </>
+          )}
 
-  {ride.status === 'completed' && (
-    <Typography variant="body2" color="primary">
-  Ride Completed At:{" "}
-  {ride.completedAt
-    ? new Date(ride.completedAt).toLocaleTimeString()
-    : "Not available"}
-</Typography>
-  )}
-
-  {ride.status === 'started' &&  (
-  <Typography variant="body2" color="primary">
-  
-  Ride Started At:{" "}
-  {ride.startedAt
-    ? new Date(ride.startedAt).toLocaleTimeString()
-    : "Not available"}
-  </Typography>
-)}
-
-{ride.status === 'cancelled' && (
-  <>
-    <Typography variant="body2" color="error">
-      Ride Cancelled At: {" "}  
-      {ride.cancelledAt ? new Date(ride.cancelledAt).toLocaleString()
-        : "Not available"}
-      
-    </Typography>
-    <Typography variant="body2" color="error">
-      Cancellation Reason: {ride.cancellationReason || "Not provided"}
-    </Typography>
-  </>
-)}
-
-
-{ride.status === "started" && elapsedTime && (
-  <Typography variant="body2" color="secondary">
-    Duration: {elapsedTime}
-  </Typography>
-)}
-
-</CardActions>
-
+          {ride.status === "started" && elapsedTime && (
+            <Typography variant="body2" color="secondary">
+              Duration: {elapsedTime}
+            </Typography>
+          )}
+        </CardActions>
       </Card>
     );
 
@@ -397,31 +437,30 @@ setUserRides(filtered);
   };
 
   <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
-  <DialogTitle>Select Cancellation Reason</DialogTitle>
-  <DialogContent>
-    <FormControl fullWidth>
-      <InputLabel>Reason</InputLabel>
-      <Select
-        value={cancelReason}
-        onChange={(e) => setCancelReason(e.target.value)}
-        label="Reason"
-      >
-        {cancellationReasons.map((reason, index) => (
-          <MenuItem key={index} value={reason}>
-            {reason}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
-    <Button color="error" onClick={confirmCancel}>
-      Confirm Cancel
-    </Button>
-  </DialogActions>
-</Dialog>
-
+    <DialogTitle>Select Cancellation Reason</DialogTitle>
+    <DialogContent>
+      <FormControl fullWidth>
+        <InputLabel>Reason</InputLabel>
+        <Select
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          label="Reason"
+        >
+          {cancellationReasons.map((reason, index) => (
+            <MenuItem key={index} value={reason}>
+              {reason}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
+      <Button color="error" onClick={confirmCancel}>
+        Confirm Cancel
+      </Button>
+    </DialogActions>
+  </Dialog>;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 14, mb: 4 }}>
@@ -463,55 +502,54 @@ setUserRides(filtered);
         </Grid>
       </Grid>
       <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
-  <DialogTitle>Select Cancellation Reason</DialogTitle>
-  <DialogContent>
-    <FormControl fullWidth sx={{ mt: 1 }}>
-      <InputLabel>Reason</InputLabel>
-      <Select
-        value={cancelReason}
-        onChange={(e) => {
-          setCancelReason(e.target.value);
-          if (e.target.value !== "Other") {
-            setCustomReason(""); // reset if not "Other"
-          }
-        }}
-        label="Reason"
-      >
-        {cancellationReasons.map((reason, index) => (
-          <MenuItem key={index} value={reason}>
-            {reason}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+        <DialogTitle>Select Cancellation Reason</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Reason</InputLabel>
+            <Select
+              value={cancelReason}
+              onChange={(e) => {
+                setCancelReason(e.target.value);
+                if (e.target.value !== "Other") {
+                  setCustomReason(""); // reset if not "Other"
+                }
+              }}
+              label="Reason"
+            >
+              {cancellationReasons.map((reason, index) => (
+                <MenuItem key={index} value={reason}>
+                  {reason}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-    {cancelReason === "Other" && (
-      <FormControl fullWidth sx={{ mt: 2 }}>
-        {/* <InputLabel htmlFor="custom-reason"></InputLabel> */}
-        <input
-          id="custom-reason"
-          type="text"
-          value={customReason}
-          onChange={(e) => setCustomReason(e.target.value)}
-          placeholder="Please enter your reason"
-          style={{
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            marginTop: "8px"
-          }}
-        />
-      </FormControl>
-    )}
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
-    <Button color="error" onClick={confirmCancel}>
-      Confirm Cancel
-    </Button>
-  </DialogActions>
-</Dialog>
-
+          {cancelReason === "Other" && (
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              {/* <InputLabel htmlFor="custom-reason"></InputLabel> */}
+              <input
+                id="custom-reason"
+                type="text"
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="Please enter your reason"
+                style={{
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                }}
+              />
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
+          <Button color="error" onClick={confirmCancel}>
+            Confirm Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

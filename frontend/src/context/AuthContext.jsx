@@ -92,7 +92,7 @@ import io from 'socket.io-client';
 
 const AuthContext = createContext(null);
 
-const socket = io(import.meta.env.VITE_SOCKET_URL); // ✅ your backend URL from .env
+const socket = io('http://localhost:5173');
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {

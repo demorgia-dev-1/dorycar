@@ -54,6 +54,7 @@ router.post('/create', auth, async (req, res) => {
     });
 
     await ride.save();
+
     req.app.get('io').emit('ride-updated', ride);
     res.status(201).json(ride);
   } catch (error) {
@@ -75,19 +76,6 @@ router.get('/', auth, async (req, res) => {
     if (destination) {
       filter.destination = { $regex: new RegExp(destination, 'i') };
     }
-
-    // if (date) {
-    //   // Convert date string to Date object and create range for the entire day
-    //   const searchDate = new Date(date);
-      
-    //   const nextDay = new Date(searchDate);
-    //   nextDay.setDate(nextDay.getDate() + 1);
-      
-    //   filter.date = {
-    //     $gte: searchDate,
-    //     $lt: nextDay
-    //   };
-    // }
 
     if (date) {
       // Convert local date string to midnight UTC
@@ -121,7 +109,7 @@ router.get('/', auth, async (req, res) => {
       .populate('acceptor', 'name')
       .populate('interestedUsers.user', 'name')
       .sort({ createdAt: -1 })
-      // .lean(); //  Optional performance boost
+      // .lean();
 
     res.json(rides);
   } catch (error) {
@@ -156,16 +144,15 @@ router.post('/:rideId/interest', auth, async (req, res) => {
     });
 
     await ride.save();
+    const updatedRide = await Ride.findById(ride._id)
+  .populate('creator', 'name')
+  .populate('acceptor', 'name')
+  .populate('interestedUsers.user', 'name');
 
-    // const populatedRide = await ride.populate([
-    //   { path: 'creator', select: 'name' },
-    //   { path: 'acceptor', select: 'name' },
-    //   { path: 'interestedUsers.user', select: 'name' }
-    // ]);
-
-    // req.app.get('io').emit('ride-updated', populatedRide);
-
-    // res.json(populatedRide);
+req.app.get('io').emit('ride-updated', updatedRide);
+    req.app.get('io').to(ride.creator._id.toString()).emit('ride-notification', {
+      message: `🧍 Someone has shown interest in your ride from ${ride.origin} to ${ride.destination}.`,
+    });
     res.json(ride);
   } catch (error) {
     res.status(500).json({
@@ -200,7 +187,16 @@ router.post('/:rideId/accept/:userId', auth, async (req, res) => {
     ride.acceptor = req.params.userId;
 
     await ride.save();
-    // req.app.get('io').emit('ride-updated', ride);
+    const updatedRide = await Ride.findById(ride._id)
+  .populate('creator', 'name')
+  .populate('acceptor', 'name')
+  .populate('interestedUsers.user', 'name');
+
+req.app.get('io').emit('ride-updated', updatedRide);
+    req.app.get('io').to(req.params.userId).emit('ride-notification', {
+      message: `🎉 Your ride from ${ride.origin} to ${ride.destination} has been accepted!`,
+    });
+    
     res.json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error accepting ride', error: error.message });
@@ -225,63 +221,30 @@ router.put('/:rideId/start', auth, async (req, res) => {
     }
 
     ride.status = 'started';
-ride.startedAt = new Date();  // ✅ setting startedAt here
+ride.startedAt = new Date();  // setting startedAt here
 console.log('Saving ride with startedAt:', ride.startedAt);
 await ride.save();
 
-    req.app.get('io').emit('ride-updated', ride);
+
+if (ride.acceptor) {
+  const updatedRide = await Ride.findById(ride._id)
+  .populate('creator', 'name')
+  .populate('acceptor', 'name')
+  .populate('interestedUsers.user', 'name');
+
+req.app.get('io').emit('ride-updated', updatedRide);
+
+  req.app.get('io').to(ride.acceptor.toString()).emit('ride-notification', {
+    message: `🚗 Your ride from ${ride.origin} to ${ride.destination} has started.`,
+  });
+}
+
 
     res.json(ride);
   } catch (error) {
     res.status(500).json({ message: 'Error starting ride', error: error.message });
   }
 });
-
-
-// router.post('/:rideId/accept/:userId', auth, async (req, res) => {
-//   try {
-//     const ride = await Ride.findById(req.params.rideId)
-//       .populate('creator', 'name')
-//       .populate('acceptor', 'name')
-//       .populate('interestedUsers.user', 'name');
-
-//     if (!ride) {
-//       return res.status(404).json({ message: 'Ride not found' });
-//     }
-
-//     if (ride.creator.id !== req.userId) {
-//       return res.status(403).json({ message: 'Only ride creator can accept users' });
-//     }
-
-//     const interest = ride.interestedUsers.find(
-//       interest => interest.user.toString() === req.params.userId
-//     );
-
-//     if (!interest) {
-//       return res.status(404).json({ message: 'User has not expressed interest in this ride' });
-//     }
-
-//     interest.status = 'accepted';
-//     ride.status = 'accepted';
-//     ride.acceptor = req.params.userId;
-
-//     await ride.save();
-
-//     // ✅ Emit event to specific passenger (user)
-//     req.app.get('io').to(req.params.userId).emit('ride-accepted', {
-//       rideId: ride._id,
-//       driver: ride.creator?.name || '',
-//       origin: ride.origin,
-//       destination: ride.destination,
-//     });
-
-//     req.app.get('io').emit('ride-updated', ride);
-//     res.json(ride);
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error accepting ride', error: error.message });
-//   }
-// });
-
 
 // Send a message in a ride chat
 
@@ -355,14 +318,12 @@ router.get('/:rideId/messages', auth, async (req, res) => {
   }
 });
 
-// Search rides by criteria
-// Add this route to your existing rideRoutes.js
 router.get('/search', auth, async (req, res) => {
   try {
     const { origin, destination, date } = req.query;
 
     const filter = {
-      status: { $in: ['pending', 'accepted', 'started'] } // ✅ Only active rides
+      status: { $in: ['pending', 'accepted', 'started'] } // Only active rides
     };
 
     if (origin) {
@@ -408,9 +369,6 @@ router.get('/my-rides', auth, async (req, res) => {
       'interestedUsers.user': req.user.userId
     }).populate('creator', 'name');
 
-    // req.app.get('io').emit('ride-updated', populatedRide);
-
-
     res.json({
       created: createdRides,
       accepted: acceptedRides,
@@ -433,10 +391,6 @@ router.put('/:rideId/complete', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only ride creator can complete the ride' });
     }
 
-    // if (ride.status !== 'accepted') {
-    //   return res.status(400).json({ message: 'Only accepted rides can be completed' });
-    // }
-
     if (ride.status !== 'started') {
       return res.status(400).json({ message: 'Only started rides can be completed' });
     }
@@ -444,9 +398,20 @@ router.put('/:rideId/complete', auth, async (req, res) => {
     ride.status = 'completed';
     ride.completedAt = new Date(); 
 
-    // ride.status = 'completed';
     await ride.save();
-    req.app.get('io').emit('ride-updated', ride);
+    if (ride.acceptor) {
+      const updatedRide = await Ride.findById(ride._id)
+      .populate('creator', 'name')
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name');
+    
+    req.app.get('io').emit('ride-updated', updatedRide);
+
+      req.app.get('io').to(ride.acceptor.toString()).emit('ride-notification', {
+        message: `✅ Your ride from ${ride.origin} to ${ride.destination} has been completed.`,
+      });
+    }
+    
 
     res.json(ride);
   } catch (error) {
@@ -476,7 +441,19 @@ router.put('/:rideId/cancel', auth, async (req, res) => {
     ride.cancellationReason = req.body.cancellationReason || 'No reason provided';
 
     await ride.save();
-    req.app.get('io').emit('ride-updated', ride);
+    if (ride.acceptor) {
+      const updatedRide = await Ride.findById(ride._id)
+      .populate('creator', 'name')
+      .populate('acceptor', 'name')
+      .populate('interestedUsers.user', 'name');
+    
+    req.app.get('io').emit('ride-updated', updatedRide);
+
+      req.app.get('io').to(ride.acceptor.toString()).emit('ride-notification', {
+        message: `❌ Your ride from ${ride.origin} to ${ride.destination} was cancelled. Reason: ${ride.cancellationReason}`,
+      });
+    }
+    
 
     res.json(ride);
   } catch (error) {
