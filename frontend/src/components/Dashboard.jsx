@@ -18,12 +18,16 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Rating,
+  TextField,
+  Chip,
 } from "@mui/material";
 
 import { useAuth } from "../context/AuthContext";
 import { rideService } from "../services/api";
 import { toast } from "react-toastify";
 import socket from "../services/socket";
+import { HourglassBottomIcon } from "@mui/icons-material/HourglassBottom";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -44,6 +48,10 @@ const Dashboard = () => {
   const [rideToCancel, setRideToCancel] = useState(null);
   const [customReason, setCustomReason] = useState("");
   const [highlightedRideId, setHighlightedRideId] = useState(null);
+  const [openReviewModal, setOpenReviewModal] = useState(false);
+  const [reviewRide, setReviewRide] = useState(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [comment, setComment] = useState("");
 
   useEffect(() => {
     fetchUserRides(); // initial fetch
@@ -91,8 +99,12 @@ const Dashboard = () => {
           ride.creator?._id === user._id ||
           ride.creator === user._id ||
           ride.acceptor?._id === user._id ||
-          ride.acceptor === user._id
+          ride.acceptor === user._id ||
+          ride.interestedUsers.some(
+            (i) => i.user?._id === user._id || i.user === user._id
+          )
       );
+
       console.log("Ride object:", rides);
 
       setUserRides(filtered);
@@ -140,21 +152,52 @@ const Dashboard = () => {
 
   const handleStatusChange = async (rideId, action, userId) => {
     try {
+      let updatedRide;
       switch (action) {
-        case "accept":
-          // await rideService.acceptInterest(rideId, user._id);
+        // case "accept":
+        //   // await rideService.acceptInterest(rideId, user._id);
 
-          await rideService.acceptRide(rideId, userId);
-          break;
+        //   await rideService.acceptRide(rideId, userId);
+        //   break;
+        case "accept":
+  try {
+    await rideService.acceptRide(rideId, userId);
+    toast.success("Ride accepted successfully");
+  } catch (error) {
+    console.error("Accept ride failed:", error);
+    toast.error("Failed to accept user");
+  }
+  break;
+
         case "cancel":
           // await rideService.cancelRide(rideId);
           const reason = prompt("Please provide a reason for cancellation:");
           await rideService.cancelRide(rideId, reason);
 
           break;
+        // case "complete":
+        //   await rideService.completeRide(rideId);
+        //   break;
         case "complete":
-          await rideService.completeRide(rideId);
-          break;
+        try {
+          updatedRide = await rideService.completeRide(rideId);
+          toast.success("✅ Ride completed successfully");
+        } catch (error) {
+          console.error("❌ Failed to complete ride:", error);
+          toast.error(error?.response?.data?.message || "Failed to complete ride");
+          return; // Stop further execution
+        }
+
+        const isAcceptor =
+          updatedRide.acceptor === user._id ||
+          updatedRide.acceptor?._id === user._id;
+
+        if (isAcceptor) {
+          setReviewRide(updatedRide);
+          setOpenReviewModal(true);
+        }
+        break;
+
         case "start":
           await rideService.startRide(rideId);
           break;
@@ -188,6 +231,22 @@ const Dashboard = () => {
     const [elapsedTime, setElapsedTime] = useState("");
     const timerRef = useRef(null);
 
+    const userInterest = ride.interestedUsers.find(
+      i => i.user?._id === user._id || i.user === user._id
+    );
+    
+    const isRejected = userInterest?.status === 'rejected';
+    const isInterested = userInterest?.status === 'interested';
+    const isAccepted = userInterest?.status === 'accepted';
+    
+    
+    // const isRejected = ride.interestedUsers.some(i => i.user === user._id && i.status === 'rejected');
+    // const isRejected = ride.interestedUsers?.some(
+    //   (i) =>
+    //     i.user?._id === user._id ||
+    //     i.user === user._id
+    // ) && ride.interestedUsers.find(i => (i.user?._id === user._id || i.user === user._id))?.status === 'rejected';
+
     useEffect(() => {
       if (ride.status === "started" && ride.startedAt) {
         const startTime = new Date(ride.startedAt).getTime();
@@ -204,26 +263,31 @@ const Dashboard = () => {
 
     return (
       <Card
-        sx={{
-          mb: 2,
-          marginTop: 15,
-          border:
-            ride._id === highlightedRideId
-              ? "2px solid #00e676"
-              : "1px solid #ccc",
-          transition: "all 0.3s ease-in-out",
-          boxShadow:
-            ride._id === highlightedRideId ? "0 0 10px #00e676" : undefined,
-          opacity:
-            ride.status === "cancelled" || ride.status === "completed"
-              ? 0.6
-              : 1,
-          pointerEvents:
-            ride.status === "cancelled" || ride.status === "completed"
-              ? "none"
-              : "auto",
-        }}
-      >
+  sx={{
+    mb: 2,
+    marginTop: 15,
+    border:
+      ride._id === highlightedRideId
+        ? "2px solid #00e676"
+        : "1px solid #ccc",
+    transition: "all 0.3s ease-in-out",
+    boxShadow:
+      ride._id === highlightedRideId ? "0 0 10px #00e676" : undefined,
+    opacity:
+      ride.status === "cancelled" ||
+      ride.status === "completed" ||
+      isRejected // ✅ FIXED HERE
+        ? 0.6
+        : 1,
+    pointerEvents:
+      ride.status === "cancelled" ||
+      ride.status === "completed" ||
+      isRejected // ✅ FIXED HERE
+        ? "none"
+        : "auto",
+  }}
+>
+
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -232,11 +296,59 @@ const Dashboard = () => {
             Date: {new Date(ride.date).toLocaleDateString()}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Status: {ride.status}
+          <Typography variant="body2" color="text.secondary">
+  Status:{" "}
+  {isCreator
+    ? ride.status
+    : isRejected
+    ? "rejected"
+    : isInterested
+    ? "waiting"
+    : ride.status}
+</Typography>
+
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Role: {isCreator ? "Creator" : "Acceptor"}
           </Typography>
+          {!isCreator &&
+            ride.interestedUsers?.some(
+              (i) =>
+                (i.user?._id === user._id || i.user === user._id) &&
+                i.status === "interested"
+            ) && (
+              <Box mt={1}>
+                <Chip
+                  // icon={<HourglassBottomIcon />} // import this from @mui/icons-material
+                  label="Waiting for approval"
+                  color="warning"
+                  variant="outlined"
+                  size="small"
+                  sx={{ borderRadius: "8px", fontWeight: 500 }}
+                />
+              </Box>
+            )}
+          {!isCreator &&
+            ride.interestedUsers.some(
+              (i) => i.user === user._id && i.status === "rejected"
+            ) && (
+              <Chip
+                label="❌ Ride request was rejected"
+                color="error"
+                variant="outlined"
+                sx={{ mt: 1 }}
+              />
+            )}
+
+            {isRejected && (
+              <Chip
+    label="❌ You were not accepted for this ride"
+    color="error"
+    variant="outlined"
+    sx={{ mt: 1 }}
+  />
+)}
+
         </CardContent>
 
         {/* Show Interested Users for Creator */}
@@ -461,6 +573,56 @@ const Dashboard = () => {
       </Button>
     </DialogActions>
   </Dialog>;
+  <Dialog open={openReviewModal} onClose={() => setOpenReviewModal(false)}>
+    <DialogTitle>Rate Your Ride</DialogTitle>
+    <DialogContent>
+      <Box mt={2}>
+        <Rating
+          name="rating"
+          value={ratingValue}
+          onChange={(e, newValue) => setRatingValue(newValue)}
+        />
+        <TextField
+          multiline
+          fullWidth
+          rows={3}
+          label="Leave a comment (optional)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          sx={{ mt: 2 }}
+        />
+      </Box>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setOpenReviewModal(false)}>Cancel</Button>
+      <Button
+        onClick={async () => {
+          try {
+            await rideService.submitReview({
+              rideId: reviewRide._id,
+              rating: ratingValue,
+              comment,
+              toUserId: reviewRide.creator._id || reviewRide.creator,
+            });
+
+            //  Fetch updated profile to get new reviews and averageRating
+            const profileRes = await api.get("/users/me");
+            updateUser(profileRes.data);
+
+            toast.success("Thanks for your feedback!");
+            setOpenReviewModal(false);
+            setRatingValue(0);
+            setComment("");
+          } catch (err) {
+            toast.error("Error submitting review");
+          }
+        }}
+        variant="contained"
+      >
+        Submit Review
+      </Button>
+    </DialogActions>
+  </Dialog>;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 14, mb: 4 }}>
@@ -497,6 +659,30 @@ const Dashboard = () => {
               <Typography color="text.secondary">
                 No rides found. Create a new ride or accept an available one!
               </Typography>
+            )}
+            {user.ratings?.length > 0 && (
+              <>
+                <Typography variant="h6" sx={{ mt: 4 }}>
+                  Past Reviews
+                </Typography>
+                {user.ratings.map((review, idx) => (
+                  <Paper key={idx} sx={{ p: 2, mb: 2 }}>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Rating value={review.rating} precision={0.5} readOnly />
+                      <Typography variant="caption">
+                        {new Date(review.date).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      {review.comment}
+                    </Typography>
+                  </Paper>
+                ))}
+              </>
             )}
           </Paper>
         </Grid>

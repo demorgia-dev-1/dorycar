@@ -63,7 +63,17 @@ export const rideService = {
   completeRide: async (rideId) => {
     const response = await api.put(`/rides/${rideId}/complete`);
     return response.data;
+  },
+
+  submitReview: async ({ rideId, toUserId, rating, comment }) => {
+    const response = await api.post(`/rides/${rideId}/review`, {
+      toUserId,
+      rating,
+      comment
+    });
+    return response.data;
   }
+  
 };
 
 api.interceptors.request.use((config) => {

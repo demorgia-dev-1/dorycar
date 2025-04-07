@@ -53,6 +53,16 @@ export const rideService = {
     return response.data;
   },
 
+  submitReview: async ({ rideId, toUserId, rating, comment }) => {
+    const response = await axios.post(`/rides/${rideId}/review`, {
+      toUserId,
+      rating,
+      comment
+    });
+    return response.data;
+  },
+  
+
   // Chat functionality
   getMessages: async (rideId) => {
     const response = await axios.get(`${API_BASE_URL}/rides/${rideId}/messages`);

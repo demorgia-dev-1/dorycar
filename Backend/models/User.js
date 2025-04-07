@@ -84,12 +84,14 @@ const userSchema = new Schema({
   vehicleImage: { type: String, default: '' },
   rcDocument: { type: String, default: '' },
 
-  ratings: [{
-    fromUser: { type: Schema.Types.ObjectId, ref: 'User' },
-    rating: Number,
-    comment: String,
-    date: { type: Date, default: Date.now }
-  }],
+  ratings: [
+    {
+      rating: Number,
+      comment: String,
+      by: { type: Schema.Types.ObjectId, ref: 'User' },
+      date: { type: Date, default: Date.now },
+    }
+  ],
   averageRating: { type: Number, default: 0 },
 });
 

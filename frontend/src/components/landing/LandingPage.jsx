@@ -36,6 +36,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Rating
 } from "@mui/material";
 
 const LandingPage = () => {
@@ -100,6 +101,7 @@ const LandingPage = () => {
     try {
       await rideService.expressInterest(rideId);
       toast.success("Ride booked successfully!");
+      setSelectedRide(false);
     } catch (error) {
       toast.error("Failed to book ride");
     }
@@ -346,7 +348,6 @@ const LandingPage = () => {
         {showResults && (
           <Container maxWidth="md" sx={{ my: 4 }}>
             <CardContent>
-              
               <Grid container spacing={2}>
                 {/* {searchResults.map((ride) => (
                   <Grid item xs={12} key={ride._id}>
@@ -390,62 +391,75 @@ const LandingPage = () => {
                   </Grid>
                 ))} */}
                 {searchResults.length > 0 ? (
-  searchResults.map((ride) => (
-    <Grid item xs={12} key={ride._id}>
-    <Typography variant="h6" gutterBottom>
-                Available Rides
-              </Typography>
-      <Card
-        onClick={() => setSelectedRide(ride)}
-        sx={{ cursor: "pointer" }}
-      >
-        <CardContent>
-          <Chip
-            label={ride.status}
-            color={
-              ride.status === "completed"
-                ? "success"
-                : ride.status === "pending"
-                ? "warning"
-                : "primary"
-            }
-            size="small"
-          />
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar src={ride.creator?.profileImage} />
-          </Box>
-          <Typography>{ride.creator.name}</Typography>
-          <Typography variant="body2">
-            ⭐ {ride.creator?.averageRating?.toFixed(1) || "N/A"}{" "}
-            ({ride.creator?.ratings?.length || 0} rides)
-          </Typography>
-          <Typography variant="h6">
-            {ride.origin} → {ride.destination}
-          </Typography>
-          <Typography>
-            Date: {new Date(ride.date).toLocaleDateString()}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Time: {new Date(ride.date).toLocaleTimeString()}
-          </Typography>
-          <Typography>Price per Seat: ₹{ride.price}</Typography>
-          <Typography>Available Seats: {ride.seats}</Typography>
-        </CardContent>
-      </Card>
-    </Grid>
-  ))
-) : (
-  <Grid item xs={12}>
-    <Typography
-      variant="h6"
-      align="center"
-      color="text.secondary"
-      sx={{ mt: 4 }}
-    >
-      No ride matches your search.
-    </Typography>
-  </Grid>
-)}
+                  searchResults.map((ride) => (
+                    <Grid item xs={12} key={ride._id}>
+                      <Typography variant="h6" gutterBottom>
+                        Available Rides
+                      </Typography>
+                      <Card
+                        onClick={() => setSelectedRide(ride)}
+                        sx={{ cursor: "pointer" }}
+                      >
+                        <CardContent>
+                          <Chip
+                            label={ride.status}
+                            color={
+                              ride.status === "completed"
+                                ? "success"
+                                : ride.status === "pending"
+                                ? "warning"
+                                : "primary"
+                            }
+                            size="small"
+                          />
+                          <Box display="flex" alignItems="center" gap={2}>
+                            <Avatar src={ride.creator?.profileImage} />
+                          </Box>
+                          <Typography>{ride.creator.name}</Typography>
+                          <Box display="flex" alignItems="center">
+                            <Rating
+                              value={ride.creator?.averageRating || 0}
+                              precision={0.5}
+                              readOnly
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ ml: 1 }}
+                            >
+                              (
+                              {ride.creator?.averageRating?.toFixed(1) || "N/A"}
+                              )
+                            </Typography>
+                          </Box>
+
+                          <Typography variant="h6">
+                            {ride.origin} → {ride.destination}
+                          </Typography>
+                          <Typography>
+                            Date: {new Date(ride.date).toLocaleDateString()}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Time: {new Date(ride.date).toLocaleTimeString()}
+                          </Typography>
+                          <Typography>Price per Seat: ₹{ride.price}</Typography>
+                          <Typography>Available Seats: {ride.seats}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Grid item xs={12}>
+                    <Typography
+                      variant="h6"
+                      align="center"
+                      color="text.secondary"
+                      sx={{ mt: 4 }}
+                    >
+                      No ride matches your search.
+                    </Typography>
+                  </Grid>
+                )}
 
                 {selectedRide && (
                   <Dialog
@@ -634,6 +648,7 @@ const LandingPage = () => {
                     <DialogActions>
                       <Button
                         onClick={() => handleBookRide(selectedRide._id)}
+
                         variant="contained"
                         color="primary"
                       >
