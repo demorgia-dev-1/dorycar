@@ -85,13 +85,15 @@ const userSchema = new Schema({
   rcDocument: { type: String, default: '' },
 
   ratings: [
-    {
-      rating: Number,
-      comment: String,
-      by: { type: Schema.Types.ObjectId, ref: 'User' },
-      date: { type: Date, default: Date.now },
-    }
-  ],
+  {
+    rating: Number,
+    comment: String,
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    date: { type: Date, default: Date.now },
+  }
+]
+,
+
   averageRating: { type: Number, default: 0 },
 });
 

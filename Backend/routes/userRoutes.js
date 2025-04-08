@@ -5,7 +5,9 @@ const auth = require('../middleware/auth');
 
 router.get('/me', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('-password');
+    const user = await User.findById(req.userId)
+    .select('-password')
+    .populate('ratings.by', 'name');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.json(user);

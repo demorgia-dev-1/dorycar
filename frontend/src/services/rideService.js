@@ -17,9 +17,22 @@ export const rideService = {
     return response.data;
   },
 
-  searchRides: async () => {
-    const response = await axios.get(`${API_BASE_URL}/rides/search`);
-    return response.data
+  // searchRides: async () => {
+  //   const response = await axios.get(`${API_BASE_URL}/rides/search`);
+  //   return response.data
+  // },
+
+  searchRides: async ({ origin, destination, date }) => {
+    const params = new URLSearchParams();
+  
+    if (origin) params.append("origin", origin);
+    if (destination) params.append("destination", destination);
+    if (date instanceof Date && !isNaN(date)) {
+      params.append("date", date.toISOString());
+    }
+  
+    const response = await axios.get(`${API_BASE_URL}/rides/search?${params.toString()}`);
+    return response.data;
   },
 
   getRides: async () => {
@@ -27,6 +40,11 @@ export const rideService = {
     return response.data;
   },
 
+  getUserById: async (userId) => {
+    const res = await api.get(`/users/${userId}`);
+    return res.data;
+  }
+,  
   // Interest management
   expressInterest: async (rideId) => {
     const response = await axios.post(`${API_BASE_URL}/rides/${rideId}/interest`);

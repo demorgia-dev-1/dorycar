@@ -30,7 +30,8 @@ import socket from "../services/socket";
 import { HourglassBottomIcon } from "@mui/icons-material/HourglassBottom";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  // const { user } = useAuth();
   const navigate = useNavigate();
   const [userRides, setUserRides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,36 +54,69 @@ const Dashboard = () => {
   const [ratingValue, setRatingValue] = useState(0);
   const [comment, setComment] = useState("");
 
+  // useEffect(() => {
+  //   fetchUserRides(); // initial fetch
+  //   const handleRideUpdated = (updatedRide) => {
+  //     const isUserInvolved =
+  //       updatedRide.creator?._id === user._id ||
+  //       updatedRide.creator === user._id ||
+  //       updatedRide.acceptor?._id === user._id ||
+  //       updatedRide.acceptor === user._id;
+
+  //     if (!isUserInvolved) return;
+
+  //     setUserRides((prevRides) => {
+  //       const rideIndex = prevRides.findIndex((r) => r._id === updatedRide._id);
+
+  //       if (rideIndex !== -1) {
+  //         // Replace the updated ride
+  //         const updated = [...prevRides];
+  //         updated[rideIndex] = updatedRide;
+  //         return updated;
+  //       } else {
+  //         // New ride added (e.g. user just accepted)
+  //         return [updatedRide, ...prevRides];
+  //       }
+  //     });
+  //     setHighlightedRideId(updatedRide._id);
+
+  //     setTimeout(() => setHighlightedRideId(null), 3000);
+  //   };
+
+  //   socket.on("ride-updated", handleRideUpdated);
+  //   return () => socket.off("ride-updated", handleRideUpdated);
+  // }, [user]);
+
   useEffect(() => {
-    fetchUserRides(); // initial fetch
+    fetchUserRides();
     const handleRideUpdated = (updatedRide) => {
       const isUserInvolved =
         updatedRide.creator?._id === user._id ||
         updatedRide.creator === user._id ||
         updatedRide.acceptor?._id === user._id ||
-        updatedRide.acceptor === user._id;
+        updatedRide.acceptor === user._id ||
+        updatedRide.interestedUsers.some(
+          (i) => i.user?._id === user._id || i.user === user._id
+        );
 
       if (!isUserInvolved) return;
 
       setUserRides((prevRides) => {
-        const rideIndex = prevRides.findIndex((r) => r._id === updatedRide._id);
-
-        if (rideIndex !== -1) {
-          // Replace the updated ride
+        const idx = prevRides.findIndex((r) => r._id === updatedRide._id);
+        if (idx !== -1) {
           const updated = [...prevRides];
-          updated[rideIndex] = updatedRide;
+          updated[idx] = updatedRide;
           return updated;
         } else {
-          // New ride added (e.g. user just accepted)
           return [updatedRide, ...prevRides];
         }
       });
       setHighlightedRideId(updatedRide._id);
-
       setTimeout(() => setHighlightedRideId(null), 3000);
     };
 
     socket.on("ride-updated", handleRideUpdated);
+
     return () => socket.off("ride-updated", handleRideUpdated);
   }, [user]);
 
@@ -131,6 +165,17 @@ const Dashboard = () => {
     setOpenCancelModal(true);
   };
 
+  const openReviewDialog = (rideId) => {
+    const ride = userRides.find((r) => r._id === rideId);
+    if (ride) {
+      setReviewRide(ride);
+      setOpenReviewModal(true);
+    } else {
+      toast.error("Ride not found for review.");
+    }
+  };
+  
+
   const confirmCancel = async () => {
     if (!cancelReason) {
       toast.error("Please select a reason");
@@ -154,49 +199,50 @@ const Dashboard = () => {
     try {
       let updatedRide;
       switch (action) {
-        // case "accept":
-        //   // await rideService.acceptInterest(rideId, user._id);
-
-        //   await rideService.acceptRide(rideId, userId);
-        //   break;
         case "accept":
-  try {
-    await rideService.acceptRide(rideId, userId);
-    toast.success("Ride accepted successfully");
-  } catch (error) {
-    console.error("Accept ride failed:", error);
-    toast.error("Failed to accept user");
-  }
-  break;
+          try {
+            await rideService.acceptRide(rideId, userId);
+            toast.success("Ride accepted successfully");
+          } catch (error) {
+            console.error("Accept ride failed:", error);
+            toast.error("Failed to accept user");
+          }
+          break;
 
         case "cancel":
-          // await rideService.cancelRide(rideId);
           const reason = prompt("Please provide a reason for cancellation:");
           await rideService.cancelRide(rideId, reason);
 
           break;
-        // case "complete":
-        //   await rideService.completeRide(rideId);
-        //   break;
+
         case "complete":
-        try {
-          updatedRide = await rideService.completeRide(rideId);
-          toast.success("✅ Ride completed successfully");
-        } catch (error) {
-          console.error("❌ Failed to complete ride:", error);
-          toast.error(error?.response?.data?.message || "Failed to complete ride");
-          return; // Stop further execution
-        }
-
-        const isAcceptor =
-          updatedRide.acceptor === user._id ||
-          updatedRide.acceptor?._id === user._id;
-
-        if (isAcceptor) {
-          setReviewRide(updatedRide);
-          setOpenReviewModal(true);
-        }
-        break;
+          try {
+            const updatedRide = await rideService.completeRide(rideId);
+            toast.success("✅ Ride completed successfully");
+        
+            const isAcceptor =
+              updatedRide.acceptor === user._id ||
+              updatedRide.acceptor?._id === user._id;
+        
+            console.log("🚀 Ride Completed:", updatedRide); // Debug
+            console.log("👤 Is Acceptor:", isAcceptor); // Debug
+        
+            if (isAcceptor) {
+              setReviewRide(updatedRide);
+              setOpenReviewModal(true);
+            }
+        
+            // fetch rides after a short delay
+            setTimeout(() => {
+              fetchUserRides();
+            }, 1500);
+          } catch (error) {
+            console.error("❌ Failed to complete ride:", error);
+            toast.error(
+              error?.response?.data?.message || "Failed to complete ride"
+            );
+          }
+          break;
 
         case "start":
           await rideService.startRide(rideId);
@@ -219,11 +265,16 @@ const Dashboard = () => {
   const RideCard = ({ ride }) => {
     const [isUpdated, setIsUpdated] = useState(false);
 
+    const alreadyReviewed = ride.reviews?.some(
+      (review) => review.fromUser === user._id
+    );
+    
+
     useEffect(() => {
       setIsUpdated(true);
       const timer = setTimeout(() => setIsUpdated(false), 2000);
       return () => clearTimeout(timer);
-    }, [ride.updatedAt]); // ride has to include updatedAt field (set in backend)
+    }, [ride.updatedAt]);
 
     const isCreator =
       ride.creator?._id === user._id || ride.creator === user._id;
@@ -232,20 +283,15 @@ const Dashboard = () => {
     const timerRef = useRef(null);
 
     const userInterest = ride.interestedUsers.find(
-      i => i.user?._id === user._id || i.user === user._id
+      (i) => i.user?._id === user._id || i.user === user._id
     );
-    
-    const isRejected = userInterest?.status === 'rejected';
-    const isInterested = userInterest?.status === 'interested';
-    const isAccepted = userInterest?.status === 'accepted';
-    
-    
-    // const isRejected = ride.interestedUsers.some(i => i.user === user._id && i.status === 'rejected');
-    // const isRejected = ride.interestedUsers?.some(
-    //   (i) =>
-    //     i.user?._id === user._id ||
-    //     i.user === user._id
-    // ) && ride.interestedUsers.find(i => (i.user?._id === user._id || i.user === user._id))?.status === 'rejected';
+    const isRejected = userInterest?.status === "rejected";
+    const isInterested = userInterest?.status === "interested";
+    const isAccepted = userInterest?.status === "accepted";
+
+    const hasAcceptedUsers = ride.interestedUsers?.some(
+      (i) => i.status === "accepted"
+    );
 
     useEffect(() => {
       if (ride.status === "started" && ride.startedAt) {
@@ -263,31 +309,30 @@ const Dashboard = () => {
 
     return (
       <Card
-  sx={{
-    mb: 2,
-    marginTop: 15,
-    border:
-      ride._id === highlightedRideId
-        ? "2px solid #00e676"
-        : "1px solid #ccc",
-    transition: "all 0.3s ease-in-out",
-    boxShadow:
-      ride._id === highlightedRideId ? "0 0 10px #00e676" : undefined,
-    opacity:
-      ride.status === "cancelled" ||
-      ride.status === "completed" ||
-      isRejected // ✅ FIXED HERE
-        ? 0.6
-        : 1,
-    pointerEvents:
-      ride.status === "cancelled" ||
-      ride.status === "completed" ||
-      isRejected // ✅ FIXED HERE
-        ? "none"
-        : "auto",
-  }}
->
-
+        sx={{
+          mb: 2,
+          marginTop: 15,
+          border:
+            ride._id === highlightedRideId
+              ? "2px solid #00e676"
+              : "1px solid #ccc",
+          transition: "all 0.3s ease-in-out",
+          boxShadow:
+            ride._id === highlightedRideId ? "0 0 10px #00e676" : undefined,
+         // opacity:
+          //  ride.status === "cancelled" ||
+          //  ride.status === "completed" ||
+           // isRejected // ✅ FIXED HERE
+            //  ? 0.6
+            //  : 1,
+          pointerEvents:
+            ride.status === "cancelled" ||
+            // ride.status === "completed" ||
+            isRejected // ✅ FIXED HERE
+              ? "none"
+              : "auto",
+        }}
+      >
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {ride.origin} → {ride.destination}
@@ -296,17 +341,19 @@ const Dashboard = () => {
             Date: {new Date(ride.date).toLocaleDateString()}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-          <Typography variant="body2" color="text.secondary">
-  Status:{" "}
-  {isCreator
-    ? ride.status
-    : isRejected
-    ? "rejected"
-    : isInterested
-    ? "waiting"
-    : ride.status}
-</Typography>
-
+            <Typography variant="body2" color="text.secondary">
+            <span style={{ fontWeight: "bold" }}>Status:</span>{" "}
+              
+              {isCreator
+                ? ride.status
+                : isRejected
+                ? "Rejected"
+                : isAccepted
+                ? "Accepted"
+                : isInterested
+                ? "Waiting"
+                : ride.status}
+            </Typography>
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Role: {isCreator ? "Creator" : "Acceptor"}
@@ -340,17 +387,15 @@ const Dashboard = () => {
               />
             )}
 
-            {isRejected && (
-              <Chip
-    label="❌ You were not accepted for this ride"
-    color="error"
-    variant="outlined"
-    sx={{ mt: 1 }}
-  />
-)}
-
+          {isRejected && (
+            <Chip
+              label="❌ You were not accepted for this ride"
+              color="error"
+              variant="outlined"
+              sx={{ mt: 1 }}
+            />
+          )}
         </CardContent>
-
         {/* Show Interested Users for Creator */}
         {isCreator && ride.interestedUsers?.length > 0 && (
           <Box mt={1} ml={2}>
@@ -382,16 +427,19 @@ const Dashboard = () => {
           </Box>
         )}
         <CardActions>
-          {/* Show Start Ride button only when ride is accepted */}
-          {isCreator && ride.status === "accepted" && (
-            <Button
-              size="small"
-              color="primary"
-              onClick={() => handleStatusChange(ride._id, "start")}
-            >
-              Start Ride
-            </Button>
-          )}
+
+          {isCreator &&
+            hasAcceptedUsers &&
+            ride.status !== "started" &&
+            ride.status !== "completed" && (
+              <Button
+                size="small"
+                color="primary"
+                onClick={() => handleStatusChange(ride._id, "start")}
+              >
+                Start Ride
+              </Button>
+            )}
 
           {/* Show Complete Ride button only when ride is started */}
           {isCreator && ride.status === "started" && (
@@ -404,7 +452,7 @@ const Dashboard = () => {
             </Button>
           )}
 
-          {ride.status === "started" && (
+          {!isRejected && ride.status === "started" && (
             <Button
               size="small"
               color="info"
@@ -420,17 +468,42 @@ const Dashboard = () => {
           )}
 
           {/* Always allow cancel unless completed */}
-          {ride.status !== "completed" && ride.status !== "cancelled" && (
-            <Button
-              size="small"
-              color="error"
-              onClick={() => openCancellationDialog(ride._id, "cancel")}
-            >
-              Cancel Ride
-            </Button>
-          )}
+          {!isRejected &&
+            ride.status !== "completed" &&
+            ride.status !== "cancelled" && (
+              <Button
+                size="small"
+                color="error"
+                onClick={() => openCancellationDialog(ride._id, "cancel")}
+              >
+                Cancel Ride
+              </Button>
+            )}
 
-          {ride.status === "completed" && (
+            {isAccepted && ride.status === "completed" && !alreadyReviewed && (
+  <Button
+    size="small"
+    color="success"
+    onClick={() => {
+      setReviewRide(ride);
+      setOpenReviewModal(true);
+    }}
+  >
+    Review
+  </Button>
+)}
+
+{alreadyReviewed && (
+  <Chip
+    label="✅ You already reviewed this ride"
+    color="success"
+    variant="outlined"
+    sx={{ mt: 1 }}
+  />
+)}
+
+
+          {!isRejected && ride.status === "completed" && (
             <Typography variant="body2" color="primary">
               Ride Completed At:{" "}
               {ride.completedAt
@@ -439,7 +512,7 @@ const Dashboard = () => {
             </Typography>
           )}
 
-          {ride.status === "started" && (
+          {!isRejected && ride.status === "started" && (
             <Typography variant="body2" color="primary">
               Ride Started At:{" "}
               {ride.startedAt
@@ -448,7 +521,7 @@ const Dashboard = () => {
             </Typography>
           )}
 
-          {ride.status === "cancelled" && (
+          {!isRejected && ride.status === "cancelled" && (
             <>
               <Typography variant="body2" color="error">
                 Ride Cancelled At:{" "}
@@ -462,167 +535,42 @@ const Dashboard = () => {
             </>
           )}
 
-          {ride.status === "started" && elapsedTime && (
+          {!isRejected && ride.status === "started" && elapsedTime && (
             <Typography variant="body2" color="secondary">
               Duration: {elapsedTime}
             </Typography>
           )}
         </CardActions>
+        ;
       </Card>
     );
-
-    //     return (
-    //       <Card sx={{ mb:2, marginTop:15}}>
-    //         <CardContent>
-    //           <Typography variant="h6" gutterBottom>
-    //             {ride.origin} → {ride.destination}
-    //           </Typography>
-    //           <Typography variant="body2" color="text.secondary">
-    //             Date: {new Date(ride.date).toLocaleDateString()}
-    //           </Typography>
-    //           <Typography variant="body2" color="text.secondary">
-    //             Status: {ride.status}
-    //           </Typography>
-    //           <Typography variant="body2" color="text.secondary">
-    //             Role: {isCreator ? 'Creator' : 'Acceptor'}
-    //           </Typography>
-    //         </CardContent>
-    //         <CardActions>
-    //         {/* If current user is the creator, show accept buttons for interested users */}
-    // {isCreator && ride.interestedUsers?.length > 0 && (
-    //   <Box mt={2}>
-    //     <Typography variant="body2" fontWeight="bold">
-    //       Interested Users:
-    //     </Typography>
-    //     {ride.interestedUsers.map((interest, index) => (
-    //       <Box key={index} sx={{ ml: 2, mb: 1 }}>
-    //         <Typography variant="body2">
-    //           {interest.user?.name || 'Unnamed User'} - Status: {interest.status}
-    //         </Typography>
-
-    //         {interest.status === 'interested' && (
-    //           <Button
-    //             size="small"
-    //             color="primary"
-    //             onClick={() =>
-    //               handleStatusChange(ride._id, 'accept', interest.user._id)
-    //             }
-    //           >
-    //             Accept This User
-    //           </Button>
-    //         )}
-    //       </Box>
-    //     ))}
-    //   </Box>
-    // )}
-
-    //           {/* {ride.status === 'pending' && !isCreator && (
-    //             <Button
-    //               size="small"
-    //               color="primary"
-    //               onClick={() => handleStatusChange(ride._id, 'accept')}
-    //             >
-    //               Accept Ride
-    //             </Button>
-    //           )} */}
-    //           {ride.status === 'accepted' && (
-    //             <Button
-    //               size="small"
-    //               color="success"
-    //               onClick={() => handleStatusChange(ride._id, 'complete')}
-    //             >
-    //               Complete Ride
-    //             </Button>
-    //           )}
-    //           {ride.status !== 'completed' && (
-    //             <Button
-    //               size="small"
-    //               color="error"
-    //               onClick={() => handleStatusChange(ride._id, 'cancel')}
-    //             >
-    //               Cancel Ride
-    //             </Button>
-    //           )}
-    //         </CardActions>
-    //       </Card>
-    //     );
   };
 
-  <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
-    <DialogTitle>Select Cancellation Reason</DialogTitle>
-    <DialogContent>
-      <FormControl fullWidth>
-        <InputLabel>Reason</InputLabel>
-        <Select
-          value={cancelReason}
-          onChange={(e) => setCancelReason(e.target.value)}
-          label="Reason"
-        >
-          {cancellationReasons.map((reason, index) => (
-            <MenuItem key={index} value={reason}>
-              {reason}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
-      <Button color="error" onClick={confirmCancel}>
-        Confirm Cancel
-      </Button>
-    </DialogActions>
-  </Dialog>;
-  <Dialog open={openReviewModal} onClose={() => setOpenReviewModal(false)}>
-    <DialogTitle>Rate Your Ride</DialogTitle>
-    <DialogContent>
-      <Box mt={2}>
-        <Rating
-          name="rating"
-          value={ratingValue}
-          onChange={(e, newValue) => setRatingValue(newValue)}
-        />
-        <TextField
-          multiline
-          fullWidth
-          rows={3}
-          label="Leave a comment (optional)"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          sx={{ mt: 2 }}
-        />
-      </Box>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={() => setOpenReviewModal(false)}>Cancel</Button>
-      <Button
-        onClick={async () => {
-          try {
-            await rideService.submitReview({
-              rideId: reviewRide._id,
-              rating: ratingValue,
-              comment,
-              toUserId: reviewRide.creator._id || reviewRide.creator,
-            });
-
-            //  Fetch updated profile to get new reviews and averageRating
-            const profileRes = await api.get("/users/me");
-            updateUser(profileRes.data);
-
-            toast.success("Thanks for your feedback!");
-            setOpenReviewModal(false);
-            setRatingValue(0);
-            setComment("");
-          } catch (err) {
-            toast.error("Error submitting review");
-          }
-        }}
-        variant="contained"
-      >
-        Submit Review
-      </Button>
-    </DialogActions>
-  </Dialog>;
+  // <Dialog open={openCancelModal} onClose={() => setOpenCancelModal(false)}>
+  //   <DialogTitle>Select Cancellation Reason</DialogTitle>
+  //   <DialogContent>
+  //     <FormControl fullWidth>
+  //       <InputLabel>Reason</InputLabel>
+  //       <Select
+  //         value={cancelReason}
+  //         onChange={(e) => setCancelReason(e.target.value)}
+  //         label="Reason"
+  //       >
+  //         {cancellationReasons.map((reason, index) => (
+  //           <MenuItem key={index} value={reason}>
+  //             {reason}
+  //           </MenuItem>
+  //         ))}
+  //       </Select>
+  //     </FormControl>
+  //   </DialogContent>
+  //   <DialogActions>
+  //     <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
+  //     <Button color="error" onClick={confirmCancel}>
+  //       Confirm Cancel
+  //     </Button>
+  //   </DialogActions>
+  // </Dialog>;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 14, mb: 4 }}>
@@ -697,7 +645,7 @@ const Dashboard = () => {
               onChange={(e) => {
                 setCancelReason(e.target.value);
                 if (e.target.value !== "Other") {
-                  setCustomReason(""); // reset if not "Other"
+                  setCustomReason("");
                 }
               }}
               label="Reason"
@@ -712,7 +660,6 @@ const Dashboard = () => {
 
           {cancelReason === "Other" && (
             <FormControl fullWidth sx={{ mt: 2 }}>
-              {/* <InputLabel htmlFor="custom-reason"></InputLabel> */}
               <input
                 id="custom-reason"
                 type="text"
@@ -733,6 +680,83 @@ const Dashboard = () => {
           <Button onClick={() => setOpenCancelModal(false)}>Close</Button>
           <Button color="error" onClick={confirmCancel}>
             Confirm Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openReviewModal} onClose={() => setOpenReviewModal(false)}>
+        <DialogTitle>Rate Your Ride</DialogTitle>
+        <DialogContent>
+          <Box mt={2}>
+            <Rating
+              name="rating"
+              value={ratingValue}
+              onChange={(e, newValue) => setRatingValue(newValue)}
+            />
+            <TextField
+              multiline
+              fullWidth
+              rows={3}
+              label="Leave a comment (optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenReviewModal(false)}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              // try {
+              //   await rideService.submitReview({
+              //     rideId: reviewRide._id,
+              //     rating: ratingValue,
+              //     comment,
+              //     toUserId: reviewRide.creator._id || reviewRide.creator,
+              //   });
+
+              //   //  Fetch updated profile to get new reviews and averageRating
+              //   const profileRes = await api.get("/users/me");
+              //   updateUser(profileRes.data);
+
+              //   toast.success("Thanks for your feedback!");
+              //   setOpenReviewModal(false);
+              //   setRatingValue(0);
+              //   setComment("");
+              // } catch (err) {
+              //   toast.error("Error submitting review");
+              // }
+              try {
+  await rideService.submitReview({
+    rideId: reviewRide._id,
+    rating: ratingValue,
+    comment,
+    toUserId: reviewRide.creator._id || reviewRide.creator,
+  });
+
+  toast.success("✅ Thanks for your feedback!");
+  setOpenReviewModal(false);
+  setRatingValue(0);
+  setComment("");
+
+  // Optional: Try to update user profile after
+  try {
+    const profileRes = await api.get("/users/me");
+    updateUser(profileRes.data);
+  } catch (profileError) {
+    console.warn("⚠️ Failed to refresh profile:", profileError);
+    // Don't show error toast — not critical for the user
+  }
+
+} catch (err) {
+  console.error("❌ Review submission failed:", err);
+  toast.error("Failed to submit review");
+}
+
+            }}
+            variant="contained"
+          >
+            Submit Review
           </Button>
         </DialogActions>
       </Dialog>

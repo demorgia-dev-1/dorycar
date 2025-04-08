@@ -83,10 +83,15 @@ const LandingPage = () => {
         params.destination = searchParams.to.trim();
       }
 
-      if (searchParams.date) {
-        // params.date = new Date(searchParams.date).toISOString().split("T")[0];
-        params.date = new Date(searchParams.date).toISOString();
+      // if (searchParams.date) {
+      //   // params.date = new Date(searchParams.date).toISOString().split("T")[0];
+      //   params.date = new Date(searchParams.date).toISOString();
+      // }
+
+      if (searchParams.date instanceof Date && !isNaN(searchParams.date)) {
+        params.date = searchParams.date.toISOString();
       }
+      
 
       const results = await rideService.searchRides(params);
       setSearchResults(results);

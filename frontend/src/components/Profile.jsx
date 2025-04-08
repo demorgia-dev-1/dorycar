@@ -214,6 +214,8 @@ const Profile = () => {
         <Typography variant="h5" align="center" gutterBottom>
           {editMode ? "Edit Profile" : "Profile"}
         </Typography>
+
+        
         <Divider sx={{ mb: 2 }} />
 
         {editMode ? (
@@ -602,8 +604,47 @@ const Profile = () => {
                     <strong>Luggage Space:</strong> {formData.vehicle.luggage}
                   </Typography>
                 )}
+
               </>
+              
             )}
+            {user.ratings?.length > 0 && (
+  <Box mt={4}>
+    <Typography variant="h6" gutterBottom>
+      ⭐ Reviews from Passengers
+    </Typography>
+
+    {user.ratings.map((review, index) => (
+      <Paper key={index} sx={{ p: 2, mb: 2 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="body2" color="text.secondary">
+            {new Date(review.date).toLocaleDateString()}
+          </Typography>
+        </Box>
+
+        <Box mt={1}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            <strong>Rating:</strong>{" "}
+            <span style={{ color: "#fbc02d" }}>
+              {"★".repeat(review.rating)}{" "}
+              {"☆".repeat(5 - review.rating)}
+            </span>
+          </Typography>
+          {review.comment && (
+            <Typography variant="body2">
+              <strong>Comment:</strong> {review.comment}
+            </Typography>
+          )}
+          {review.by?.name && (
+            <Typography variant="caption" color="text.secondary">
+              — {review.by.name}
+            </Typography>
+          )}
+        </Box>
+      </Paper>
+    ))}
+  </Box>
+)}
 
             <Button
               fullWidth
