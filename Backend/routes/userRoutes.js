@@ -21,7 +21,7 @@ router.patch('/profile', auth, async (req, res) => {
   try {
     const userId = req.userId;
 
-    const updates = req.body; // Contains fields like phone, dob, vehicle, etc.
+    const updates = req.body;
 
     const user = await User.findByIdAndUpdate(userId, updates, {
       new: true,

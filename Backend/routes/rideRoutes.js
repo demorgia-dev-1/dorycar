@@ -185,7 +185,7 @@ router.post("/:rideId/interest", auth, async (req, res) => {
       .get("io")
       .to(ride.creator._id.toString())
       .emit("ride-notification", {
-        message: `🧍 Someone has shown interest in your ride from ${ride.origin} to ${ride.destination}.`,
+        message: ` Someone has shown interest in your ride from ${ride.origin} to ${ride.destination}.`,
       });
     res.json(ride);
   } catch (error) {
@@ -195,65 +195,6 @@ router.post("/:rideId/interest", auth, async (req, res) => {
     });
   }
 });
-
-// Accept a ride (for ride creator to accept an interested user)
-// router.post("/:rideId/accept/:userId", auth, async (req, res) => {
-//   try {
-//     const ride = await Ride.findById(req.params.rideId);
-//     if (!ride) {
-//       return res.status(404).json({ message: "Ride not found" });
-//     }
-
-//     if (ride.creator.toString() !== req.userId) {
-//       return res.status(403).json({ message: "Only ride creator can accept users" });
-//     }
-    
-//     const interest = ride.interestedUsers.find(i => i.user.toString() === req.params.userId);
-//     if (!interest) {
-//       return res.status(404).json({ message: "User has not expressed interest in this ride" });
-//     }
-    
-//     interest.status = "accepted";
-//     ride.status = "accepted";
-//     ride.acceptor = req.params.userId;
-    
-//     // Mark others as rejected
-//     ride.interestedUsers.forEach(i => {
-//       if (i.user.toString() !== req.params.userId) {
-//         i.status = "rejected";
-//         if (!ride.notifications) ride.notifications = [];
-//         ride.notifications.push({
-//           user: i.user,
-//           message: `❌ Your request for ride from ${ride.origin} to ${ride.destination} was not accepted.`,
-//         });
-    
-//         req.app.get("io").to(i.user.toString()).emit("ride-notification", {
-//           message: `❌ Your request for ride from ${ride.origin} to ${ride.destination} was not accepted.`,
-//         });
-//       }
-//     });
-    
-//     await ride.save();
-//     const updatedRide = await Ride.findById(ride._id)
-//   .populate("creator", "name")
-//   .populate("acceptor", "name")
-//   .populate("interestedUsers.user", "name");
-
-// req.app.get("io").emit("ride-updated", updatedRide);
-
-// req.app.get("io").to(req.params.userId).emit("ride-notification", {
-//   message: `🎉 Your ride from ${ride.origin} to ${ride.destination} has been accepted!`,
-// });
-
-// res.json(updatedRide);
-
-
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Error accepting ride", error: error.message });
-//   }
-// });
 
 // Accept a ride (for ride creator to accept an interested user)
 router.post("/:rideId/accept/:userId", auth, async (req, res) => {
@@ -275,13 +216,13 @@ router.post("/:rideId/accept/:userId", auth, async (req, res) => {
     }
 
     interest.status = "accepted";
-    ride.acceptor = null; // optional: if you no longer use single acceptor field
+    ride.acceptor = null; 
 
     await ride.save();
     req.app.get("io").emit("ride-updated", ride);
 
     req.app.get("io").to(req.params.userId).emit("ride-notification", {
-      message: `🎉 You’ve been accepted for the ride from ${ride.origin} to ${ride.destination}`,
+      message: ` You’ve been accepted for the ride from ${ride.origin} to ${ride.destination}`,
     });
 
     res.json(ride);
@@ -289,83 +230,6 @@ router.post("/:rideId/accept/:userId", auth, async (req, res) => {
     res.status(500).json({ message: "Error accepting ride", error: error.message });
   }
 });
-
-
-// Start a ride
-// router.put("/:rideId/start", auth, async (req, res) => {
-//   try {
-//     const ride = await Ride.findById(req.params.rideId);
-
-//     if (!ride) {
-//       return res.status(404).json({ message: "Ride not found" });
-//     }
-
-//     if (ride.creator.toString() !== req.userId) {
-//       return res.status(403).json({ message: "Only ride creator can start the ride" });
-//     }
-    
-//     if (ride.status !== "accepted") {
-//       return res.status(400).json({ message: "Only accepted rides can be started" });
-//     }
-//     const hasAcceptedUsers = ride.interestedUsers.some(
-//       interest => interest.status === 'accepted'
-//     );
-    
-//     if (!hasAcceptedUsers) {
-//       return res.status(400).json({ message: "You must accept at least one user before starting the ride" });
-//     }
-    
-//     // Update status if not already
-//     if (ride.status !== "started") {
-//       ride.status = "started";
-//       ride.startedAt = new Date();
-//     }
-    
-//     ride.status = "started";
-// ride.startedAt = new Date();
-
-// ride.interestedUsers = ride.interestedUsers.map((interest) => {
-//   if (interest.status !== "accepted") {
-//     interest.status = "rejected";
-//     const rejectionMessage = `❌ Your request for the ride from ${ride.origin} to ${ride.destination} was not accepted.`;
-
-//     // Send rejection notification
-//     req.app.get("io").to(interest.user.toString()).emit("ride-notification", {
-//       message: rejectionMessage,
-//       type: "rejected",
-//     });
-
-//     ride.notifications.push({ user: interest.user, message: rejectionMessage });
-//   }
-//   return interest;
-// });
-
-// await ride.save();
-    
-//     const updatedRide = await Ride.findById(ride._id)
-//       .populate("creator", "name")
-//       .populate("acceptor", "name")
-//       .populate("interestedUsers.user", "name");
-    
-//     req.app.get("io").emit("ride-updated", updatedRide);
-    
-//     ride.interestedUsers.forEach((interest) => {
-//       if (interest.status === "accepted") {
-//         req.app.get("io").to(interest.user.toString()).emit("ride-notification", {
-//           message: `🚗 Your ride from ${ride.origin} to ${ride.destination} has started.`,
-//         });
-//       }
-//     });
-
-//     res.json(updatedRide);
-
-    
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Error starting ride", error: error.message });
-//   }
-// });
 
 router.put("/:rideId/start", auth, async (req, res) => {
   try {
@@ -397,7 +261,7 @@ router.put("/:rideId/start", auth, async (req, res) => {
     ride.interestedUsers = ride.interestedUsers.map((interest) => {
       if (interest.status !== "accepted") {
         interest.status = "rejected";
-        const rejectionMessage = `❌ Your request for the ride from ${ride.origin} to ${ride.destination} was not accepted.`;
+        const rejectionMessage = ` Your request for the ride from ${ride.origin} to ${ride.destination} was not accepted.`;
 
         // Send rejection notification
         req.app.get("io").to(interest.user.toString()).emit("ride-notification", {
@@ -423,7 +287,7 @@ router.put("/:rideId/start", auth, async (req, res) => {
     ride.interestedUsers.forEach((interest) => {
       if (interest.status === "accepted") {
         req.app.get("io").to(interest.user.toString()).emit("ride-notification", {
-          message: `🚗 Your ride from ${ride.origin} to ${ride.destination} has started.`,
+          message: ` Your ride from ${ride.origin} to ${ride.destination} has started.`,
         });
       }
     });
@@ -526,7 +390,7 @@ router.get("/search", auth, async (req, res) => {
     const { origin, destination, date } = req.query;
 
     const filter = {
-      status: { $in: ["pending", "accepted", "started"] }, // Only active rides
+      status: { $in: ["pending", "accepted", "started"] },
     };
 
     if (origin) {
@@ -632,7 +496,7 @@ router.put("/:rideId/complete", auth, async (req, res) => {
     ride.interestedUsers.forEach((i) => {
       if (i.status === "accepted") {
         req.app.get("io").to(i.user.toString()).emit("ride-notification", {
-          message: `✅ Your ride from ${ride.origin} to ${ride.destination} has been completed.`,
+          message: ` Your ride from ${ride.origin} to ${ride.destination} has been completed.`,
           type: "completed",
         });
       }
@@ -721,13 +585,13 @@ router.put("/:rideId/cancel", auth, async (req, res) => {
   .get("io")
   .to(ride.acceptor.toString())
   .emit("ride-notification", {
-    message: `❌ Your ride from ${ride.origin} to ${ride.destination} was cancelled. Reason: ${ride.cancellationReason}`,
+    message: ` Your ride from ${ride.origin} to ${ride.destination} was cancelled. Reason: ${ride.cancellationReason}`,
     type: "cancelled",
   });
 
 ride.interestedUsers.forEach((i) => {
   req.app.get("io").to(i.user.toString()).emit("ride-notification", {
-    message: `❌ Ride from ${ride.origin} to ${ride.destination} was cancelled. Reason: ${ride.cancellationReason}`,
+    message: ` Ride from ${ride.origin} to ${ride.destination} was cancelled. Reason: ${ride.cancellationReason}`,
     type: "cancelled",
   })
 })

@@ -15,7 +15,7 @@ import {
 import { toast } from "react-toastify";
 
 const Register = () => {
-  const navigate = useNavigate(); // Add this line
+  const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",

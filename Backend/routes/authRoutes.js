@@ -7,18 +7,18 @@ const User = require('../models/User');
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login request received:', req.body); // Debug log
+    console.log('Login request received:', req.body);
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    console.log('User found:', user ? 'Yes' : 'No'); // Debug log
+    console.log('User found:', user ? 'Yes' : 'No');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isValidPassword ? 'Yes' : 'No'); // Debug log
+    console.log('Password valid:', isValidPassword ? 'Yes' : 'No');
 
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    console.log('Login successful, sending response'); // Debug log
+    console.log('Login successful, sending response');
     res.json({
       token,
       user: {
@@ -117,7 +117,6 @@ router.get('/verify-token', async (req, res) => {
 
 // Logout route
 router.post('/logout', (req, res) => {
-  // Since JWT is stateless, we'll handle token invalidation on the client side
   res.json({ message: 'Logged out successfully' });
 });
 

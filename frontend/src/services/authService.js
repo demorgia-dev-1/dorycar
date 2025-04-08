@@ -14,7 +14,7 @@ const authService = {
 
   login: async (credentials) => {
     try {
-      console.log('Attempting login with:', credentials); // Debug log
+      console.log('Attempting login with:', credentials);
       const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials);
       const data = response.data;
 

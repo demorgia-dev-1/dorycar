@@ -1,4 +1,4 @@
-// socketAuthMiddleware.js
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -13,7 +13,7 @@ const socketAuth = async (socket, next) => {
     if (!user) return next(new Error('User not found'));
 
     socket.user = user;
-    socket.join(user._id.toString()); // Join personal room
+    socket.join(user._id.toString());
     next();
   } catch (err) {
     console.error('Socket auth failed:', err.message);

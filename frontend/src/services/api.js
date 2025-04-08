@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { io } from 'socket.io-client';
-export const socket = io('http://localhost:5000'); // or your deployed backend URL
+export const socket = io('http://localhost:5000');
 
 
 export const API_BASE_URL = "http://localhost:5000/api";
@@ -24,12 +24,6 @@ export const rideService = {
     const response = await api.post(`/rides/create`, rideData);
     return response.data;
   },
-
-  // searchRides: async (searchData) => {
-  //   const response = await api.get(`/rides/search`, { params: searchData });
-  //   return response.data;
-  // },
-
   searchRides: async ({ origin, destination, date }) => {
     const params = new URLSearchParams();
   

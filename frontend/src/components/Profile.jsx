@@ -171,7 +171,7 @@ const Profile = () => {
       };
 
       await updateUserAPI(user._id, updated);
-      updateUser(updated); // Update context
+      updateUser(updated);
       setEditMode(false);
     } catch (err) {
       console.error("Failed to update profile:", err.message);
@@ -216,17 +216,17 @@ const Profile = () => {
         </Typography>
 
         {user.averageRating > 0 && (
-  <Box mt={2}>
-    <Typography>
-      <strong>Average Rating:</strong>{" "}
-      <span style={{ color: "#fbc02d" }}>
-        {"★".repeat(Math.round(user.averageRating))}{" "}
-        {"☆".repeat(5 - Math.round(user.averageRating))} (
-        {user.averageRating.toFixed(1)})
-      </span>
-    </Typography>
-  </Box>
-)}
+          <Box mt={2}>
+            <Typography>
+              <strong>Average Rating:</strong>{" "}
+              <span style={{ color: "#fbc02d" }}>
+                {"★".repeat(Math.round(user.averageRating))}{" "}
+                {"☆".repeat(5 - Math.round(user.averageRating))} (
+                {user.averageRating.toFixed(1)})
+              </span>
+            </Typography>
+          </Box>
+        )}
         <Divider sx={{ mb: 2 }} />
 
         {editMode ? (
@@ -592,7 +592,8 @@ const Profile = () => {
                 )}
                 {formData.vehicle.vin && (
                   <Typography>
-                    <strong>VIN (Vehicle Identification Number):</strong> {formData.vehicle.vin}
+                    <strong>VIN (Vehicle Identification Number):</strong>{" "}
+                    {formData.vehicle.vin}
                   </Typography>
                 )}
                 {formData.vehicle.seats && (
@@ -615,49 +616,50 @@ const Profile = () => {
                     <strong>Luggage Space:</strong> {formData.vehicle.luggage}
                   </Typography>
                 )}
-
               </>
-              
             )}
 
-
             {user.ratings?.length > 0 && (
-  <Box mt={4}>
-    <Typography variant="h6" gutterBottom>
-      ⭐ Reviews from Passengers
-    </Typography>
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  ⭐ Reviews from Passengers
+                </Typography>
 
-    {user.ratings.map((review, index) => (
-      <Paper key={index} sx={{ p: 2, mb: 2 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            {new Date(review.date).toLocaleDateString()}
-          </Typography>
-        </Box>
+                {user.ratings.map((review, index) => (
+                  <Paper key={index} sx={{ p: 2, mb: 2 }}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(review.date).toLocaleDateString()}
+                      </Typography>
+                    </Box>
 
-        <Box mt={1}>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            <strong>Rating:</strong>{" "}
-            <span style={{ color: "#fbc02d" }}>
-              {"★".repeat(review.rating)}{" "}
-              {"☆".repeat(5 - review.rating)}
-            </span>
-          </Typography>
-          {review.comment && (
-            <Typography variant="body2">
-              <strong>Comment:</strong> {review.comment}
-            </Typography>
-          )}
-          {review.by?.name && (
-            <Typography variant="caption" color="text.secondary">
-              — {review.by.name}
-            </Typography>
-          )}
-        </Box>
-      </Paper>
-    ))}
-  </Box>
-)}
+                    <Box mt={1}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        <strong>Rating:</strong>{" "}
+                        <span style={{ color: "#fbc02d" }}>
+                          {"★".repeat(review.rating)}{" "}
+                          {"☆".repeat(5 - review.rating)}
+                        </span>
+                      </Typography>
+                      {review.comment && (
+                        <Typography variant="body2">
+                          <strong>Comment:</strong> {review.comment}
+                        </Typography>
+                      )}
+                      {review.by?.name && (
+                        <Typography variant="caption" color="text.secondary">
+                          — {review.by.name}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            )}
 
             <Button
               fullWidth

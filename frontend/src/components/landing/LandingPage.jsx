@@ -56,7 +56,7 @@ const LandingPage = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setMove((prev) => !prev);
-    }, 5000); // Move every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -82,11 +82,6 @@ const LandingPage = () => {
       if (searchParams.to.trim()) {
         params.destination = searchParams.to.trim();
       }
-
-      // if (searchParams.date) {
-      //   // params.date = new Date(searchParams.date).toISOString().split("T")[0];
-      //   params.date = new Date(searchParams.date).toISOString();
-      // }
 
       if (searchParams.date instanceof Date && !isNaN(searchParams.date)) {
         params.date = searchParams.date.toISOString();
@@ -224,7 +219,7 @@ const LandingPage = () => {
                       sx={{
                         textAlign: "left",
                         fontSize: "3.2rem",
-                        fontWeight: "none",
+                        // fontWeight: "none",
                         color: "white",
                         whiteSpace: "normal",
                         wordWrap: "break-word",
@@ -577,7 +572,6 @@ const LandingPage = () => {
                       <Typography>
                         <strong>Fare per Seat:</strong> ₹{selectedRide.price}
                       </Typography>
-                      {/* <Typography><strong>Payment Methods:</strong> {selectedRide.paymentMethods?.join(", ") || "Not specified"}</Typography> */}
                       <Typography>
                         <strong>Payment Methods:</strong>{" "}
                         {Array.isArray(selectedRide.paymentMethods) &&
@@ -1135,24 +1129,20 @@ const LandingPage = () => {
                 </IconButton>
                 <IconButton
                   color="primary"
-                  onClick={() => 
-                    window.open("https://x.com/login")
-                  }
+                  onClick={() => window.open("https://x.com/login")}
                 >
                   <TwitterIcon />
                 </IconButton>
-                <IconButton color="primary"
-                onClick={() => 
-                    window.open("https://www.instagram.com/")
-                  }
-                  >
+                <IconButton
+                  color="primary"
+                  onClick={() => window.open("https://www.instagram.com/")}
+                >
                   <InstagramIcon />
                 </IconButton>
-                <IconButton color="primary"
-                onClick={() => 
-                    window.open("https://www.linkedin.com/")
-                  }
-                  >
+                <IconButton
+                  color="primary"
+                  onClick={() => window.open("https://www.linkedin.com/")}
+                >
                   <LinkedInIcon />
                 </IconButton>
               </Box>

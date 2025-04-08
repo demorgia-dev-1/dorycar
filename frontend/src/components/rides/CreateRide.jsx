@@ -59,50 +59,13 @@ const CreateRide = () => {
       date: newDate,
     });
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-
-  //   try {
-  //     await rideService.createRide({
-  //       ...formData,
-  //       price: parseFloat(formData.price),
-  //       seats: parseInt(formData.seats),
-  //       paymentMethods: formData.paymentMethods ,
-        
-  //     });
-  //     console.log("Submitting Ride:", formData);
-
-  //     toast.success("Ride created successfully!");
-  //     navigate("/dashboard");
-  //   } catch (error) {
-  //     console.error("Error creating ride:", error);
-  //     if (
-  //       error.response?.status === 400 &&
-  //       error.response.data?.missingFields
-  //     ) {
-  //       const missingFields = error.response.data.missingFields;
-  //       const message = `Please complete the following fields in your profile: ${missingFields.join(
-  //         ", "
-  //       )}`;
-
-  //       toast.error(message);
-  //       navigate("/profile");
-  //     } else {
-  //       toast.error(error.response?.data?.message || "Failed to create ride");
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
   
     try {
-      // ✅ Add custom payment if not already handled
+      //  Add custom payment if not already handled
       if (showCustomInput && customPayment.trim()) {
         formData.paymentMethods = [
           ...formData.paymentMethods.filter((m) => m !== "Other"),
@@ -166,7 +129,6 @@ const CreateRide = () => {
               backgroundImage: "url(/ride.jpg)",
               backgroundSize: "cover",
               backgroundPosition: "center",
-              // borderRadius: 2,
               minHeight: 400,
               transition: "transform 0.3s ease-in-out",
               "&:hover": {
@@ -269,17 +231,6 @@ const CreateRide = () => {
                     InputProps={{ inputProps: { min: 0, step: 0.01 } }}
                   />
                 </Grid>
-                {/* <Grid item xs={12}>
-              <TextField
-                  required
-                  fullWidth
-                  label="Payment Method"
-                  name="paymentMethod"
-                  type="text"
-                  value={formData.paymentMethod || ""}
-                  onChange={handleChange}
-                />
-              </Grid> */}
                 <Grid item xs={12}>
                   <TextField
                     select
@@ -364,7 +315,7 @@ const CreateRide = () => {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          e.target.blur(); // Triggers onBlur to save
+                          e.target.blur();
                         }
                       }}
                       sx={{ mt: 2 }}

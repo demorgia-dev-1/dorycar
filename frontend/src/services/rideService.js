@@ -2,7 +2,6 @@
 import io from 'socket.io-client';
 import { API_BASE_URL } from './api';
 import axios from 'axios';
-import { search } from '../../../Backend/routes/rideRoutes';
 
 const socket = io('/', {
   path: '/socket.io',
@@ -12,16 +11,10 @@ const socket = io('/', {
 export const rideService = {
   // Ride CRUD operations
   createRide: async (rideData) => {
-    console.log("📦 Payload to backend:", rideData);
+    console.log(" Payload to backend:", rideData);
     const response = await axios.post(`${API_BASE_URL}/rides/create`, rideData);
     return response.data;
   },
-
-  // searchRides: async () => {
-  //   const response = await axios.get(`${API_BASE_URL}/rides/search`);
-  //   return response.data
-  // },
-
   searchRides: async ({ origin, destination, date }) => {
     const params = new URLSearchParams();
   

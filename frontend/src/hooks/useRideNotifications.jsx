@@ -12,13 +12,13 @@ const useRideNotifications = () => {
 
   useEffect(() => {
     if (user?._id) {
-      socket.emit('join', user._id); // Join user room
+      socket.emit('join', user._id);
 
       socket.on('ride-notification', (data) => {
-        console.log("📩 Notification received:", data);
+        console.log("Notification received:", data);
         toast.info(
             <div>
-              <strong>📢 Ride Update</strong>
+              <strong> Ride Update</strong>
               <div>{data.message}</div>
             </div>,
             {
@@ -31,7 +31,7 @@ const useRideNotifications = () => {
               progress: undefined,
               theme: 'colored',
               transition: Slide,
-              icon: '🚗',
+              // icon: '',
             }
           );
       });
