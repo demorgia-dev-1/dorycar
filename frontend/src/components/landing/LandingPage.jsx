@@ -36,7 +36,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Rating
+  Rating,
 } from "@mui/material";
 
 const LandingPage = () => {
@@ -91,7 +91,6 @@ const LandingPage = () => {
       if (searchParams.date instanceof Date && !isNaN(searchParams.date)) {
         params.date = searchParams.date.toISOString();
       }
-      
 
       const results = await rideService.searchRides(params);
       setSearchResults(results);
@@ -173,6 +172,10 @@ const LandingPage = () => {
                 width: "50%",
                 maxHeight: "100%",
                 objectFit: "contain",
+                transition: "transform 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.1)",
+                },
               }}
             />
             {/* Content Container */}
@@ -228,11 +231,12 @@ const LandingPage = () => {
                         display: "flex",
                         flexDirection: "column",
                         gap: 1,
+                        fontWeight: "bold",
                       }}
                     >
                       <span>
                         <Typewriter
-                          words={["Connect Ride & Share Ride.."]}
+                          words={["Connect & Share Ride.."]}
                           loop={0}
                           cursor
                           cursorStyle="|"
@@ -311,8 +315,9 @@ const LandingPage = () => {
               <Grid item xs={12} sm={2}>
                 <TextField
                   fullWidth
-                  label="Passengers"
+                  // label="Passengers"
                   type="number"
+                  variant="outlined"
                   InputProps={{
                     inputProps: { min: 1 },
                     startAdornment: (
@@ -653,7 +658,6 @@ const LandingPage = () => {
                     <DialogActions>
                       <Button
                         onClick={() => handleBookRide(selectedRide._id)}
-
                         variant="contained"
                         color="primary"
                       >
@@ -997,15 +1001,15 @@ const LandingPage = () => {
           <Grid container spacing={4} sx={{ mt: 4 }}>
             {[
               {
-                name: "John Doe",
+                name: "M. Afjal",
                 text: "DoryCar has made my daily commute so much more affordable and enjoyable. I have met great people along the way!",
               },
               {
-                name: "Jane Smith",
+                name: "Ashmita Thakur",
                 text: "As a car owner, I love being able to share my journey and reduce costs while helping others travel.",
               },
               {
-                name: "Mike Johnson",
+                name: "Vimal Singh",
                 text: "The platform is so easy to use, and the verification system makes me feel safe when traveling with others.",
               },
             ].map((testimonial, index) => (
@@ -1121,16 +1125,34 @@ const LandingPage = () => {
                 Connect With Us
               </Typography>
               <Box sx={{ display: "flex", gap: 2 }}>
-                <IconButton color="primary">
+                <IconButton
+                  color="primary"
+                  onClick={() =>
+                    window.open("https://www.facebook.com/", "_blank")
+                  }
+                >
                   <FacebookIcon />
                 </IconButton>
-                <IconButton color="primary">
+                <IconButton
+                  color="primary"
+                  onClick={() => 
+                    window.open("https://x.com/login")
+                  }
+                >
                   <TwitterIcon />
                 </IconButton>
-                <IconButton color="primary">
+                <IconButton color="primary"
+                onClick={() => 
+                    window.open("https://www.instagram.com/")
+                  }
+                  >
                   <InstagramIcon />
                 </IconButton>
-                <IconButton color="primary">
+                <IconButton color="primary"
+                onClick={() => 
+                    window.open("https://www.linkedin.com/")
+                  }
+                  >
                   <LinkedInIcon />
                 </IconButton>
               </Box>

@@ -215,7 +215,18 @@ const Profile = () => {
           {editMode ? "Edit Profile" : "Profile"}
         </Typography>
 
-        
+        {user.averageRating > 0 && (
+  <Box mt={2}>
+    <Typography>
+      <strong>Average Rating:</strong>{" "}
+      <span style={{ color: "#fbc02d" }}>
+        {"★".repeat(Math.round(user.averageRating))}{" "}
+        {"☆".repeat(5 - Math.round(user.averageRating))} (
+        {user.averageRating.toFixed(1)})
+      </span>
+    </Typography>
+  </Box>
+)}
         <Divider sx={{ mb: 2 }} />
 
         {editMode ? (
@@ -608,6 +619,8 @@ const Profile = () => {
               </>
               
             )}
+
+
             {user.ratings?.length > 0 && (
   <Box mt={4}>
     <Typography variant="h6" gutterBottom>

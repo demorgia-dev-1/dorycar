@@ -366,7 +366,6 @@ const Dashboard = () => {
             ) && (
               <Box mt={1}>
                 <Chip
-                  // icon={<HourglassBottomIcon />} // import this from @mui/icons-material
                   label="Waiting for approval"
                   color="warning"
                   variant="outlined"
