@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
+
   useEffect(() => {
     if (user?._id) {
       socket.emit("join", user._id);
@@ -51,8 +52,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(credentials);
       if (response.user && response.token) {
-        const profileRes = await api.get("/users/me");
-        setUser(profileRes.data);
+  const profileRes = await api.get("users/me");
+  updateUser(profileRes.data); //  this must replace the context state
         localStorage.setItem("user", JSON.stringify(profileRes.data));
         toast.success("Login successful!");
         navigate("/dashboard");

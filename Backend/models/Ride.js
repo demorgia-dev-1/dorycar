@@ -59,7 +59,7 @@ const rideSchema = new Schema({
     },
     status: {
       type: String,
-      enum: ['interested', 'accepted', 'rejected'],
+      enum: ['interested', 'accepted', 'rejected', 'started' ,'completed', 'cancelled'],
       default: 'interested'
     },
 

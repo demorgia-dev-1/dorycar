@@ -20,6 +20,10 @@ export const updateUser = async (userId, data) => {
 
 // Ride services
 export const rideService = {
+  userProfile: async () => {
+    const response = await api.get(`/me`)
+    return response.data
+  },
   createRide: async (rideData) => {
     const response = await api.post(`/rides/create`, rideData);
     return response.data;
@@ -77,6 +81,7 @@ export const rideService = {
   }
   
 };
+
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');

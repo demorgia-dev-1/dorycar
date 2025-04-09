@@ -24,9 +24,10 @@ import {
 } from "@mui/material";
 
 import { useAuth } from "../context/AuthContext";
-import { rideService } from "../services/api";
+import api, { rideService } from "../services/api";
 import { toast } from "react-toastify";
 import socket from "../services/socket";
+
 
 const Dashboard = () => {
   const { user, updateUser } = useAuth();
@@ -343,7 +344,7 @@ const Dashboard = () => {
                   {interest.status}
                 </Typography>
 
-                {interest.status === "interested" && (
+                {isCreator && !isRejected && interest.status === "interested" && (
                   <Button
                     size="small"
                     variant="contained"
@@ -361,10 +362,11 @@ const Dashboard = () => {
           </Box>
         )}
         <CardActions>
-          {isCreator &&
+          {!isRejected && isCreator &&
             hasAcceptedUsers &&
             ride.status !== "started" &&
-            ride.status !== "completed" && (
+            ride.status !== "completed" &&
+            ride.status !== "cancelled" && (
               <Button
                 size="small"
                 color="primary"
@@ -374,7 +376,6 @@ const Dashboard = () => {
               </Button>
             )}
 
-          {/* Show Complete Ride button only when ride is started */}
           {isCreator && ride.status === "started" && (
             <Button
               size="small"
@@ -400,8 +401,7 @@ const Dashboard = () => {
             </Button>
           )}
 
-          {/* Always allow cancel unless completed */}
-          {!isRejected &&
+          {!isRejected && 
             ride.status !== "completed" &&
             ride.status !== "cancelled" && (
               <Button
@@ -412,8 +412,7 @@ const Dashboard = () => {
                 Cancel Ride
               </Button>
             )}
-
-          {isAccepted && ride.status === "completed" && !alreadyReviewed && (
+              {isAccepted && ride.status === "completed" && !alreadyReviewed && (
             <Button
               size="small"
               color="success"
@@ -425,6 +424,8 @@ const Dashboard = () => {
               Review
             </Button>
           )}
+            
+
 
           {alreadyReviewed && (
             <Chip
@@ -473,7 +474,7 @@ const Dashboard = () => {
             </Typography>
           )}
         </CardActions>
-        ;
+        
       </Card>
     );
   };
@@ -492,40 +493,34 @@ const Dashboard = () => {
               <Typography variant="h4" component="h1">
                 Welcome, {user?.name}!
               </Typography>
-              <Box 
-              display='flex'
-              flexDirection='column'
-              gap='1rem'
-              >
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate("/rides/create")}
-                style={{
-    // background: "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
-    fontWeight: "bold",
-    fontSize: "1rem"
-  }}
-              >
-                Create New Ride
-              </Button>
-              <Button
-  variant="contained"
-  // color="primary"
-  onClick={() => navigate("landing/landingPage")}
-  style={{
-    background: "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
-    fontWeight: "bold",
-    fontSize: "1rem",
-    color: "#1976D2"
-  }}
->
-  Search a Ride
-</Button>
-
+              <Box display="flex" flexDirection="column" gap="1rem">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate("/rides/create")}
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: "1rem",
+                  }}
+                >
+                  Create New Ride
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate("/")}
+                  style={{
+                    background:
+                      "linear-gradient(to left, #f3bedc, #e9bde3, #dcbee8, #cebeed, #bebfef, #b2c4f3, #a6c9f4, #9ccdf4, #98d6f4, #9adff2, #a1e6ee, #adede9)",
+                    fontWeight: "bold",
+                    fontSize: "1rem",
+                    color: "#1976D2",
+                  }}
+                >
+                  Search a Ride
+                </Button>
               </Box>
             </Box>
-            
+
             <Typography variant="h5" gutterBottom>
               Your Rides
             </Typography>
@@ -538,30 +533,6 @@ const Dashboard = () => {
               <Typography color="text.secondary">
                 No rides found. Create a new ride or accept an available one!
               </Typography>
-            )}
-            {user.ratings?.length > 0 && (
-              <>
-                <Typography variant="h6" sx={{ mt: 4 }}>
-                  Past Reviews
-                </Typography>
-                {user.ratings.map((review, idx) => (
-                  <Paper key={idx} sx={{ p: 2, mb: 2 }}>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Rating value={review.rating} precision={0.5} readOnly />
-                      <Typography variant="caption">
-                        {new Date(review.date).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {review.comment}
-                    </Typography>
-                  </Paper>
-                ))}
-              </>
             )}
           </Paper>
         </Grid>

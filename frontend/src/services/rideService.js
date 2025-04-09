@@ -9,6 +9,11 @@ const socket = io('/', {
 });
 
 export const rideService = {
+  
+  userProfile: async () => {
+    const response = await axios.get(`/me`)
+    return response.data
+  },
   // Ride CRUD operations
   createRide: async (rideData) => {
     console.log(" Payload to backend:", rideData);

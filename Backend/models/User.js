@@ -89,6 +89,7 @@ const userSchema = new Schema({
     rating: Number,
     comment: String,
     by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    ride: { type: mongoose.Schema.Types.ObjectId, ref: "Ride" },
     date: { type: Date, default: Date.now },
   }
 ]
