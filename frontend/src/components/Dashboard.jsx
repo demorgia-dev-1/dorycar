@@ -116,15 +116,42 @@ const Dashboard = () => {
     setOpenCancelModal(true);
   };
 
+  // const openReviewDialog = (rideId) => {
+  //   const ride = userRides.find((r) => r._id === rideId);
+  //   if (ride) {
+  //     setReviewRide(ride);
+  //     setOpenReviewModal(true);
+  //   } else {
+  //     toast.error("Ride not found for review.");
+  //   }
+  // };
+
   const openReviewDialog = (rideId) => {
     const ride = userRides.find((r) => r._id === rideId);
     if (ride) {
       setReviewRide(ride);
+  
+      // Check if the current user has already reviewed this ride's creator
+      const existingReview = ride.creator?.ratings?.find(
+        (review) =>
+          review.ride === rideId && (review.by === user._id || review.by?._id === user._id)
+      );
+  
+      if (existingReview) {
+        setRatingValue(existingReview.rating);
+        setComment(existingReview.comment);
+      } else {
+        setRatingValue(0);
+        setComment("");
+      }
+  
       setOpenReviewModal(true);
     } else {
-      toast.error("Ride not found for review.");
+      toast.error("Ride not found");
     }
   };
+  
+  
 
   const confirmCancel = async () => {
     if (!cancelReason) {
@@ -214,9 +241,12 @@ const Dashboard = () => {
   const RideCard = ({ ride }) => {
     const [isUpdated, setIsUpdated] = useState(false);
 
-    const alreadyReviewed = ride.reviews?.some(
-      (review) => review.fromUser === user._id
+    const alreadyReviewed = ride.creator?.ratings?.some(
+      (review) =>
+        review.ride === ride._id &&
+        (review.by === user._id || review.by?._id === user._id)
     );
+       
 
     useEffect(() => {
       setIsUpdated(true);
@@ -235,6 +265,8 @@ const Dashboard = () => {
     const isRejected = userInterest?.status === "rejected";
     const isInterested = userInterest?.status === "interested";
     const isAccepted = userInterest?.status === "accepted";
+    const isEligibleToReview = userInterest?.status === "accepted" || userInterest?.status === "completed";
+
 
     const hasAcceptedUsers = ride.interestedUsers?.some(
       (i) => i.status === "accepted"
@@ -412,7 +444,8 @@ const Dashboard = () => {
                 Cancel Ride
               </Button>
             )}
-              {isAccepted && ride.status === "completed" && !alreadyReviewed && (
+              {/* {isAccepted && ride.status === "completed" && !alreadyReviewed && (
+              {isEligibleToReview && ride.status === "completed" && !alreadyReviewed &&(
             <Button
               size="small"
               color="success"
@@ -423,18 +456,29 @@ const Dashboard = () => {
             >
               Review
             </Button>
-          )}
+            
+          )} */}
+          {isEligibleToReview && ride.status === "completed" && (
+  <Button
+    onClick={() => openReviewDialog(ride._id)}
+    size="small"
+    color="success"
+  >
+    {alreadyReviewed ? "Update Review" : "Review"}
+  </Button>
+)}
+
             
 
 
-          {alreadyReviewed && (
+          {/* {alreadyReviewed && (
             <Chip
               label="You already reviewed this ride"
               color="success"
               variant="outlined"
               sx={{ mt: 1 }}
             />
-          )}
+          )} */}
 
           {!isRejected && ride.status === "completed" && (
             <Typography variant="body2" color="primary">
@@ -637,6 +681,8 @@ const Dashboard = () => {
           >
             Submit Review
           </Button>
+
+
         </DialogActions>
       </Dialog>
     </Container>

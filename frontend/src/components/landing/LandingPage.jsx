@@ -651,12 +651,16 @@ const LandingPage = () => {
 
                     <DialogActions>
                       <Button
-                        onClick={() => handleBookRide(selectedRide._id)}
+                        onClick={() => {
+                          handleBookRide(selectedRide._id);
+                          navigate("/dashboard");
+                        }}
                         variant="contained"
                         color="primary"
                       >
                         Book
                       </Button>
+
                       <Button
                         onClick={() =>
                           handleChatWithDriver(selectedRide.creator._id)
