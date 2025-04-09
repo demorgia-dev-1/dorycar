@@ -27,7 +27,7 @@ import { useAuth } from "../context/AuthContext";
 import api, { rideService } from "../services/api";
 import { toast } from "react-toastify";
 import socket from "../services/socket";
-
+import RideDetailsModal from "./rides/RideDetailsModal";
 
 const Dashboard = () => {
   const { user, updateUser } = useAuth();
@@ -52,6 +52,7 @@ const Dashboard = () => {
   const [reviewRide, setReviewRide] = useState(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [comment, setComment] = useState("");
+  const [selectedRide, setSelectedRide] = useState(null);
 
   useEffect(() => {
     fetchUserRides();
@@ -116,27 +117,18 @@ const Dashboard = () => {
     setOpenCancelModal(true);
   };
 
-  // const openReviewDialog = (rideId) => {
-  //   const ride = userRides.find((r) => r._id === rideId);
-  //   if (ride) {
-  //     setReviewRide(ride);
-  //     setOpenReviewModal(true);
-  //   } else {
-  //     toast.error("Ride not found for review.");
-  //   }
-  // };
-
   const openReviewDialog = (rideId) => {
     const ride = userRides.find((r) => r._id === rideId);
     if (ride) {
       setReviewRide(ride);
-  
+
       // Check if the current user has already reviewed this ride's creator
       const existingReview = ride.creator?.ratings?.find(
         (review) =>
-          review.ride === rideId && (review.by === user._id || review.by?._id === user._id)
+          review.ride === rideId &&
+          (review.by === user._id || review.by?._id === user._id)
       );
-  
+
       if (existingReview) {
         setRatingValue(existingReview.rating);
         setComment(existingReview.comment);
@@ -144,14 +136,12 @@ const Dashboard = () => {
         setRatingValue(0);
         setComment("");
       }
-  
+
       setOpenReviewModal(true);
     } else {
       toast.error("Ride not found");
     }
   };
-  
-  
 
   const confirmCancel = async () => {
     if (!cancelReason) {
@@ -168,7 +158,7 @@ const Dashboard = () => {
       setRideToCancel(null);
       fetchUserRides();
     } catch (error) {
-      toast.error("Failed to cancel ride");
+      toast.error( error?.response?.data?.message || "Failed to cancel ride");
     }
   };
 
@@ -246,7 +236,6 @@ const Dashboard = () => {
         review.ride === ride._id &&
         (review.by === user._id || review.by?._id === user._id)
     );
-       
 
     useEffect(() => {
       setIsUpdated(true);
@@ -265,8 +254,9 @@ const Dashboard = () => {
     const isRejected = userInterest?.status === "rejected";
     const isInterested = userInterest?.status === "interested";
     const isAccepted = userInterest?.status === "accepted";
-    const isEligibleToReview = userInterest?.status === "accepted" || userInterest?.status === "completed";
-
+    const isEligibleToReview =
+      userInterest?.status === "accepted" ||
+      userInterest?.status === "completed";
 
     const hasAcceptedUsers = ride.interestedUsers?.some(
       (i) => i.status === "accepted"
@@ -376,25 +366,53 @@ const Dashboard = () => {
                   {interest.status}
                 </Typography>
 
-                {isCreator && !isRejected && interest.status === "interested" && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="primary"
-                    sx={{ mt: 0.5 }}
-                    onClick={() =>
-                      handleStatusChange(ride._id, "accept", interest.user._id)
-                    }
-                  >
-                    Accept This User
-                  </Button>
-                )}
+                {isCreator &&
+                  !isRejected &&
+                  interest.status === "interested" && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      sx={{ mt: 0.5 }}
+                      onClick={() =>
+                        handleStatusChange(
+                          ride._id,
+                          "accept",
+                          interest.user._id
+                        )
+                      }
+                    >
+                      Accept This User
+                    </Button>
+                  )}
               </Box>
             ))}
           </Box>
         )}
         <CardActions>
-          {!isRejected && isCreator &&
+          <Button
+            onClick={() => setSelectedRide(ride)}
+            size="small"
+            color="primary"
+          >
+            View Ride Details
+          </Button>
+          <RideDetailsModal
+            selectedRide={selectedRide}
+            onClose={() => setSelectedRide(null)}
+            onBook={() => {
+              handleBookRide(selectedRide._id);
+              setSelectedRide(null);
+            }}
+            onChat={() => handleChatWithDriver(selectedRide.creator._id)}
+            onMap={() =>
+              handleViewMap(selectedRide.origin, selectedRide.destination)
+            }
+            onShare={() => handleShareRide(selectedRide)}
+          />
+          
+          {!isRejected &&
+            isCreator &&
             hasAcceptedUsers &&
             ride.status !== "started" &&
             ride.status !== "completed" &&
@@ -433,7 +451,8 @@ const Dashboard = () => {
             </Button>
           )}
 
-          {!isRejected && 
+          { 
+            !isRejected &&
             ride.status !== "completed" &&
             ride.status !== "cancelled" && (
               <Button
@@ -444,42 +463,16 @@ const Dashboard = () => {
                 Cancel Ride
               </Button>
             )}
-              {/* {isAccepted && ride.status === "completed" && !alreadyReviewed && (
-              {isEligibleToReview && ride.status === "completed" && !alreadyReviewed &&(
+
+          {isEligibleToReview && ride.status === "completed" && (
             <Button
+              onClick={() => openReviewDialog(ride._id)}
               size="small"
               color="success"
-              onClick={() => {
-                setReviewRide(ride);
-                setOpenReviewModal(true);
-              }}
             >
-              Review
+              {alreadyReviewed ? "Update Review" : "Review"}
             </Button>
-            
-          )} */}
-          {isEligibleToReview && ride.status === "completed" && (
-  <Button
-    onClick={() => openReviewDialog(ride._id)}
-    size="small"
-    color="success"
-  >
-    {alreadyReviewed ? "Update Review" : "Review"}
-  </Button>
-)}
-
-            
-
-
-          {/* {alreadyReviewed && (
-            <Chip
-              label="You already reviewed this ride"
-              color="success"
-              variant="outlined"
-              sx={{ mt: 1 }}
-            />
-          )} */}
-
+          )}
           {!isRejected && ride.status === "completed" && (
             <Typography variant="body2" color="primary">
               Ride Completed At:{" "}
@@ -518,7 +511,6 @@ const Dashboard = () => {
             </Typography>
           )}
         </CardActions>
-        
       </Card>
     );
   };
@@ -547,7 +539,7 @@ const Dashboard = () => {
                     fontSize: "1rem",
                   }}
                 >
-                  Create New Ride
+                  Publish Ride
                 </Button>
                 <Button
                   variant="contained"
@@ -560,7 +552,7 @@ const Dashboard = () => {
                     color: "#1976D2",
                   }}
                 >
-                  Search a Ride
+                  Search New Ride
                 </Button>
               </Box>
             </Box>
@@ -681,8 +673,6 @@ const Dashboard = () => {
           >
             Submit Review
           </Button>
-
-
         </DialogActions>
       </Dialog>
     </Container>

@@ -9,7 +9,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './components/Dashboard';
 import CreateRide from './components/rides/CreateRide';
-import RideList from './components/rides/RideList';
+import RideResults from './components/rides/RideResults';
 import PrivateRoute from './components/PrivateRoute';
 import theme from './theme';
 import Profile from './components/Profile';
@@ -35,8 +35,10 @@ function App() {
             <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
             <Route path="rides">
-              <Route index element={<PrivateRoute><RideList /></PrivateRoute>} />
+              {/* <Route index element={<PrivateRoute><RideList /></PrivateRoute>} /> */}
               <Route path="create" element={<PrivateRoute><CreateRide /></PrivateRoute>} />
+              <Route path="/rides" element={<RideResults/>} />
+
             </Route>
             <Route path="*" element={<LandingPage />} />
           </Routes>

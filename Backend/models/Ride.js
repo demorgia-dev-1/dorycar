@@ -18,6 +18,18 @@ const messageSchema = new Schema({
   }
 });
 
+
+const ridePreferenceSchema = new Schema({
+  // gender: { type: Boolean, default: false },
+  music: { type: Boolean, default: false },
+  // chat: { type: Boolean, default: false },
+  ac: { type: Boolean, default: false},
+  luggage: {type: Boolean, default: false},
+  womenOnly: {type: Boolean, default: false},
+  smoking: {type: Boolean, default: false}
+
+}, { _id: false });
+
 const rideSchema = new Schema({
   creator: {
     type: Schema.Types.ObjectId,
@@ -84,9 +96,6 @@ const rideSchema = new Schema({
   vehicleDetails: {
     type: String
   },
-  additionalNotes: {
-    type: String
-  },
   startedAt: {
     type: Date
   },
@@ -99,20 +108,18 @@ const rideSchema = new Schema({
   cancellationReason: {
     type: String
   },
-
-  // New fields for frontend display
-  departureTime: String,
-  arrivalTime: String, 
-  stops: [String],
-
   paymentMethods: [String],
+upiId: { type: String },
+qrImageUrl: { type: String },
 
-  preferences: {
-    ac: Boolean,
-    smoking: Boolean,
-    music: Boolean,
-    luggage: Boolean,
-    womenOnly: Boolean
+  preferredCommunication: {
+    type: String,
+    enum: ['Chat', 'Call', 'Both'],
+    default: undefined
+  },
+  ridePreference: {
+    type: ridePreferenceSchema,
+    default: () => ({})
   },
 
   notifications: [

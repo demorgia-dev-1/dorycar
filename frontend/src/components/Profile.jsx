@@ -20,7 +20,28 @@ import { updateUser as updateUserAPI } from "../services/api";
 const genders = ["Male", "Female", "Other"];
 const vehicleTypes = ["Car", "SUV", "Bike", "Van"];
 const fuelTypes = ["Petrol", "Diesel", "CNG", "Electric"];
-const communicationPrefs = ["Chat", "Call", "Both"];
+const carMakers = [
+  "Maruti Suzuki",
+  "Hyundai",
+  "Tata Motors",
+  "Mahindra",
+  "Honda",
+  "Toyota",
+  "Renault",
+  "Kia Motors",
+  "Volkswagen",
+  "Skoda",
+  "Audi",
+  "BMW",
+  "Mercedes-Benz",
+  "Jaguar Land Rover",
+  "Volvo",
+  "Nissan",
+  "Ford",
+  "Mitsubishi",
+  "Datsun",
+  "Chevrolet",
+];
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -35,8 +56,6 @@ const Profile = () => {
     dob: "",
     profileImage: "",
     emergencyContact: "",
-    preferredCommunication: "",
-    ridePreference: { gender: "", music: "", chat: "", ac: "" },
     vehicle: {
       type: "",
       make: "",
@@ -44,11 +63,7 @@ const Profile = () => {
       color: "",
       year: "",
       registration: "",
-      seats: "",
-      ac: "",
       fuel: "",
-      luggage: "",
-      vin: "",
     },
     vehicleImage: "",
     rcDocument: "",
@@ -64,13 +79,6 @@ const Profile = () => {
         dob: user.dob || "",
         profileImage: user.profileImage || "",
         emergencyContact: user.emergencyContact || "",
-        preferredCommunication: user.preferredCommunication || "",
-        ridePreference: user.ridePreference || {
-          gender: "",
-          music: "",
-          chat: "",
-          ac: "",
-        },
         vehicle: user.vehicle || {
           type: "",
           make: "",
@@ -78,10 +86,7 @@ const Profile = () => {
           color: "",
           year: "",
           registration: "",
-          seats: "",
-          ac: "",
           fuel: "",
-          luggage: "",
         },
         vehicleImage: user.vehicleImage || "",
         rcDocument: user.rcDocument || "",
@@ -113,6 +118,8 @@ const Profile = () => {
       let uploadedProfileImage = formData.profileImage;
       let uploadedVehicleImage = formData.vehicleImage;
       let uploadedRcDocument = formData.rcDocument;
+      let uploadedIdProof = formData.idProof;
+      let uploadedLicense = formData.license;
 
       // Upload profile image
       if (selectedFile) {
@@ -163,11 +170,44 @@ const Profile = () => {
         uploadedRcDocument = data.secure_url;
       }
 
+      // Upload RC document if it's a file
+      if (formData.idProof instanceof File) {
+        const form = new FormData();
+        form.append("file", formData.idProof);
+        form.append("upload_preset", "dorycar_unsigned");
+        const res = await fetch(
+          "https://api.cloudinary.com/v1_1/dorycar/image/upload",
+          {
+            method: "POST",
+            body: form,
+          }
+        );
+        const data = await res.json();
+        uploadedIdProof = data.secure_url;
+      }
+      // Upload RC document if it's a file
+      if (formData.license instanceof File) {
+        const form = new FormData();
+        form.append("file", formData.license);
+        form.append("upload_preset", "dorycar_unsigned");
+        const res = await fetch(
+          "https://api.cloudinary.com/v1_1/dorycar/image/upload",
+          {
+            method: "POST",
+            body: form,
+          }
+        );
+        const data = await res.json();
+        uploadedLicense = data.secure_url;
+      }
+
       const updated = {
         ...formData,
         profileImage: uploadedProfileImage,
         vehicleImage: uploadedVehicleImage,
         rcDocument: uploadedRcDocument,
+        idProof: uploadedIdProof,
+        license: uploadedLicense,
       };
 
       await updateUserAPI(user._id, updated);
@@ -215,17 +255,17 @@ const Profile = () => {
           {editMode ? "Edit Profile" : "Profile"}
         </Typography>
         {user.averageRating > 0 && (
-  <Box mt={2}>
-    <Typography>
-      <strong>Your Overall Ratings:</strong>{" "}
-      <span style={{ color: "#fbc02d" }}>
-        {"★".repeat(Math.round(user.averageRating))}{" "}
-        {"☆".repeat(5 - Math.round(user.averageRating))} (
-        {user.averageRating.toFixed(1)})
-      </span>
-    </Typography>
-  </Box>
-)}
+          <Box mt={2}>
+            <Typography>
+              <strong>Your Overall Ratings:</strong>{" "}
+              <span style={{ color: "#fbc02d" }}>
+                {"★".repeat(Math.round(user.averageRating))}{" "}
+                {"☆".repeat(5 - Math.round(user.averageRating))} (
+                {user.averageRating.toFixed(1)})
+              </span>
+            </Typography>
+          </Box>
+        )}
         <Divider sx={{ mb: 2 }} />
 
         {editMode ? (
@@ -286,60 +326,6 @@ const Profile = () => {
                 ))}
               </Select>
             </FormControl>
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Preferred Communication</InputLabel>
-              <Select
-                name="preferredCommunication"
-                value={formData.preferredCommunication}
-                onChange={handleChange}
-              >
-                {communicationPrefs.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Typography variant="h6">Ride Preferences</Typography>
-            <TextField
-              label="Gender Preference"
-              fullWidth
-              sx={{ my: 1 }}
-              value={formData.ridePreference.gender}
-              onChange={(e) =>
-                handleNestedChange("ridePreference", "gender", e.target.value)
-              }
-            />
-            <TextField
-              label="Music Preference"
-              fullWidth
-              sx={{ my: 1 }}
-              value={formData.ridePreference.music}
-              onChange={(e) =>
-                handleNestedChange("ridePreference", "music", e.target.value)
-              }
-            />
-            <TextField
-              label="Chat Preference"
-              fullWidth
-              sx={{ my: 1 }}
-              value={formData.ridePreference.chat}
-              onChange={(e) =>
-                handleNestedChange("ridePreference", "chat", e.target.value)
-              }
-            />
-            <TextField
-              label="AC Preference"
-              fullWidth
-              sx={{ my: 1 }}
-              value={formData.ridePreference.ac}
-              onChange={(e) =>
-                handleNestedChange("ridePreference", "ac", e.target.value)
-              }
-            />
-
             <Typography variant="h6" mt={2}>
               Vehicle Info
             </Typography>
@@ -358,25 +344,22 @@ const Profile = () => {
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label="Vehicle VIN"
-              value={formData.vehicle.vin || ""}
-              onChange={(e) =>
-                handleNestedChange("vehicle", "vin", e.target.value)
-              }
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              label="Make"
-              value={formData.vehicle.make}
-              onChange={(e) =>
-                handleNestedChange("vehicle", "make", e.target.value)
-              }
-              sx={{ mb: 2 }}
-            />
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Make</InputLabel>
+              <Select
+                value={formData.vehicle.make}
+                onChange={(e) =>
+                  handleNestedChange("vehicle", "make", e.target.value)
+                }
+              >
+                {carMakers.map((v) => (
+                  <MenuItem key={v} value={v}>
+                    {v}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
             <TextField
               fullWidth
               label="Model"
@@ -413,24 +396,7 @@ const Profile = () => {
               }
               sx={{ mb: 2 }}
             />
-            <TextField
-              fullWidth
-              label="Seats"
-              value={formData.vehicle.seats}
-              onChange={(e) =>
-                handleNestedChange("vehicle", "seats", e.target.value)
-              }
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="AC"
-              value={formData.vehicle.ac}
-              onChange={(e) =>
-                handleNestedChange("vehicle", "ac", e.target.value)
-              }
-              sx={{ mb: 2 }}
-            />
+            
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Fuel Type</InputLabel>
               <Select
@@ -446,15 +412,7 @@ const Profile = () => {
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label="Luggage Space"
-              value={formData.vehicle.luggage}
-              onChange={(e) =>
-                handleNestedChange("vehicle", "luggage", e.target.value)
-              }
-              sx={{ mb: 2 }}
-            />
+            
             <Typography variant="h6">Uploads</Typography>
             <Button
               component="label"
@@ -482,7 +440,32 @@ const Profile = () => {
                 onChange={(e) => handleFileUpload(e, "rcDocument")}
               />
             </Button>
-
+            <Button
+              component="label"
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Upload ID Proof
+              <input
+                type="file"
+                hidden
+                onChange={(e) => handleFileUpload(e, "idProf")}
+              />
+            </Button>
+            <Button
+              component="label"
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Upload License
+              <input
+                type="file"
+                hidden
+                onChange={(e) => handleFileUpload(e, "licenseImage")}
+              />
+            </Button>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Button variant="contained" onClick={handleSave}>
                 Save
@@ -528,36 +511,7 @@ const Profile = () => {
                 <strong>Emergency Contact:</strong> {formData.emergencyContact}
               </Typography>
             )}
-            {user.preferredCommunication && (
-              <Typography>
-                <strong>Preferred Communication:</strong>{" "}
-                {user.preferredCommunication}
-              </Typography>
-            )}
-
-            {formData.ridePreference.gender && (
-              <Typography>
-                <strong>Gender Preference:</strong>{" "}
-                {formData.ridePreference.gender}
-              </Typography>
-            )}
-            {formData.ridePreference.music && (
-              <Typography>
-                <strong>Music Preference:</strong>{" "}
-                {formData.ridePreference.music}
-              </Typography>
-            )}
-            {formData.ridePreference.chat && (
-              <Typography>
-                <strong>Chat Preference:</strong> {formData.ridePreference.chat}
-              </Typography>
-            )}
-            {formData.ridePreference.ac && (
-              <Typography>
-                <strong>AC Preference:</strong> {formData.ridePreference.ac}
-              </Typography>
-            )}
-
+           
             {formData.vehicle?.type && (
               <>
                 <Typography sx={{ mt: 2 }}>
@@ -589,32 +543,13 @@ const Profile = () => {
                     {formData.vehicle.registration}
                   </Typography>
                 )}
-                {formData.vehicle.vin && (
-                  <Typography>
-                    <strong>VIN (Vehicle Identification Number):</strong>{" "}
-                    {formData.vehicle.vin}
-                  </Typography>
-                )}
-                {formData.vehicle.seats && (
-                  <Typography>
-                    <strong>Seats:</strong> {formData.vehicle.seats}
-                  </Typography>
-                )}
-                {formData.vehicle.ac && (
-                  <Typography>
-                    <strong>AC:</strong> {formData.vehicle.ac}
-                  </Typography>
-                )}
+                
                 {formData.vehicle.fuel && (
                   <Typography>
                     <strong>Fuel:</strong> {formData.vehicle.fuel}
                   </Typography>
                 )}
-                {formData.vehicle.luggage && (
-                  <Typography>
-                    <strong>Luggage Space:</strong> {formData.vehicle.luggage}
-                  </Typography>
-                )}
+                
               </>
             )}
 

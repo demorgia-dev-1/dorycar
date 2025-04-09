@@ -9,7 +9,7 @@ import {
   Box,
   Grid,
 } from "@mui/material";
-import { MenuItem, Chip, Autocomplete } from "@mui/material";
+import { MenuItem, Chip} from "@mui/material";
 
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -25,22 +25,23 @@ const CreateRide = () => {
     date: new Date(),
     seats: 1,
     price: "",
-    departureTime: "",
-    arrivalTime: "",
+    preferredCommunication: "",
+    ridePreference: {
+      music: true,
+      ac: true,
+      womenOnly: true,
+      luggage: true,
+      smoking: true,
+    },
     paymentMethods: [],
   });
 
-  const allPaymentOptions = [
-    "UPI",
-    "Cash",
-    "Card",
-    "NetBanking",
-    "Wallet",
-    "Paytm",
-    "GPay",
-    "PhonePe",
-    "Other",
-  ];
+  const communicationPrefs = ["Chat", "Call", "Both"];
+
+  const allPaymentOptions = ["UPI", "Cash", "QR", "Other"];
+
+  const [qrImage, setQrImage] = useState(null);
+
   const [customPayment, setCustomPayment] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
 
@@ -53,33 +54,40 @@ const CreateRide = () => {
     });
   };
 
+  const handleNestedChange = (section, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: value },
+    }));
+  };
+
   const handleDateChange = (newDate) => {
     setFormData({
       ...formData,
       date: newDate,
     });
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     try {
       //  Add custom payment if not already handled
       if (showCustomInput && customPayment.trim()) {
         formData.paymentMethods = [
           ...formData.paymentMethods.filter((m) => m !== "Other"),
-          customPayment.trim()
+          customPayment.trim(),
         ];
       }
-  
+
       await rideService.createRide({
         ...formData,
         price: parseFloat(formData.price),
         seats: parseInt(formData.seats),
         paymentMethods: formData.paymentMethods,
       });
-  
+
       toast.success("Ride created successfully!");
       navigate("/dashboard");
     } catch (error) {
@@ -183,30 +191,6 @@ const CreateRide = () => {
                     />
                   </LocalizationProvider>
                 </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    label="Departure Time"
-                    name="departureTime"
-                    type="time"
-                    value={formData.departureTime || ""}
-                    onChange={handleChange}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    label="Arrival Time"
-                    name="arrivalTime"
-                    type="time"
-                    value={formData.arrivalTime || ""}
-                    onChange={handleChange}
-                  />
-                </Grid>
-
                 <Grid item xs={12} sm={6}>
                   <TextField
                     required
@@ -231,6 +215,138 @@ const CreateRide = () => {
                     InputProps={{ inputProps: { min: 0, step: 0.01 } }}
                   />
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="Music Preference"
+                    fullWidth
+                    sx={{ my: 1 }}
+                    value={
+                      formData.ridePreference.music === true ? "true" : "false"
+                    }
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "ridePreference",
+                        "music",
+                        e.target.value === "true"
+                      )
+                    }
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="Smoking Preference"
+                    fullWidth
+                    sx={{ my: 1 }}
+                    value={
+                      formData.ridePreference.smoking === true
+                        ? "true"
+                        : "false"
+                    }
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "ridePreference",
+                        "smoking",
+                        e.target.value === "true"
+                      )
+                    }
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="AC Preference"
+                    fullWidth
+                    sx={{ my: 1 }}
+                    value={
+                      formData.ridePreference.ac === true ? "true" : "false"
+                    }
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "ridePreference",
+                        "ac",
+                        e.target.value === "true"
+                      )
+                    }
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="Luggage Preference"
+                    fullWidth
+                    sx={{ my: 1 }}
+                    value={
+                      formData.ridePreference.luggage === true
+                        ? "true"
+                        : "false"
+                    }
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "ridePreference",
+                        "luggage",
+                        e.target.value === "true"
+                      )
+                    }
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="Women Only Preference"
+                    fullWidth
+                    sx={{ my: 1 }}
+                    value={
+                      formData.ridePreference.womenOnly === true
+                        ? "true"
+                        : "false"
+                    }
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "ridePreference",
+                        "womenOnly",
+                        e.target.value === "true"
+                      )
+                    }
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="Preferred Communication"
+                    name="preferredCommunication"
+                    fullWidth
+                    value={formData.preferredCommunication}
+                    onChange={handleChange}
+                  >
+                    {communicationPrefs.map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
                 <Grid item xs={12}>
                   <TextField
                     select
@@ -249,9 +365,7 @@ const CreateRide = () => {
                       ),
                       MenuProps: {
                         PaperProps: {
-                          style: {
-                            maxHeight: 300,
-                          },
+                          style: { maxHeight: 300 },
                         },
                       },
                     }}
@@ -264,6 +378,7 @@ const CreateRide = () => {
                       const newValues =
                         typeof value === "string" ? value.split(",") : value;
 
+                      // Track special inputs
                       if (
                         newValues.includes("Other") &&
                         !formData.paymentMethods.includes("Other")
@@ -284,6 +399,8 @@ const CreateRide = () => {
                       </MenuItem>
                     ))}
                   </TextField>
+
+                  {/* Custom Payment Input */}
                   {showCustomInput && (
                     <TextField
                       fullWidth
@@ -320,6 +437,60 @@ const CreateRide = () => {
                       }}
                       sx={{ mt: 2 }}
                     />
+                  )}
+
+                  {/* UPI Field */}
+                  {formData.paymentMethods.includes("UPI") && (
+                    <TextField
+                      fullWidth
+                      label="Enter UPI ID"
+                      value={formData.upiId || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          upiId: e.target.value,
+                        }))
+                      }
+                      sx={{ mt: 2 }}
+                    />
+                  )}
+
+                  {/* QR Code Upload */}
+                  {formData.paymentMethods.includes("QR") && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body2" gutterBottom>
+                        Upload QR Code Image
+                      </Typography>
+                      <Button variant="outlined" component="label" fullWidth>
+                        Upload QR Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setQrImage(file);
+                            }
+                          }}
+                        />
+                      </Button>
+
+                      {qrImage && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="caption">Preview:</Typography>
+                          <img
+                            src={URL.createObjectURL(qrImage)}
+                            alt="QR Code"
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: "200px",
+                              marginTop: 8,
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </Box>
                   )}
                 </Grid>
               </Grid>
