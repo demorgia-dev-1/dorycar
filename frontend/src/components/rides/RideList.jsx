@@ -32,6 +32,7 @@ const RideList = ({ searchResults }) => {
 
   const handleChatWithDriver = (driverId) => {
     navigate(`/chat/${driverId}`);
+    
   };
 
   const handleViewMap = (origin, destination) => {

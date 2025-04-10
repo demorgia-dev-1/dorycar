@@ -28,19 +28,6 @@ export const rideService = {
     const response = await api.post(`/rides/create`, rideData);
     return response.data;
   },
-  // searchRides: async ({ origin, destination, date }) => {
-  //   const params = new URLSearchParams();
-  
-  //   if (origin) params.append("origin", origin);
-  //   if (destination) params.append("destination", destination);
-  //   if (date instanceof Date && !isNaN(date)) {
-  //     params.append("date", date.toISOString());
-  //   }
-  
-  //   const response = await api.get(`${API_BASE_URL}/rides/search?${params.toString()}`);
-  //   return response.data;
-  // },
-
   searchRides: async ({ origin, destination, date }) => {
     const params = new URLSearchParams();
     if (origin) params.append("origin", origin);
@@ -90,7 +77,17 @@ export const rideService = {
       comment
     });
     return response.data;
-  }
+  },
+  getMessages: async (rideId) => {
+    const res = await api.get(`/rides/${rideId}/messages`);
+    return res.data;
+  },
+  
+  sendMessage: async (rideId, content) => {
+    const res = await api.post(`/rides/${rideId}/messages`, { content });
+    return res.data;
+  },
+  
   
 };
 

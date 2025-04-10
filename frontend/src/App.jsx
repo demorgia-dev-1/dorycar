@@ -1,4 +1,3 @@
-
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -15,8 +14,7 @@ import theme from './theme';
 import Profile from './components/Profile';
 import useRideNotifications from './hooks/useRideNotifications'; 
 import { ToastContainer } from 'react-toastify';
-
-
+import RideChat from './components/rides/RideChat';
 
 function App() {
   useRideNotifications();
@@ -37,9 +35,13 @@ function App() {
             <Route path="rides">
               {/* <Route index element={<PrivateRoute><RideList /></PrivateRoute>} /> */}
               <Route path="create" element={<PrivateRoute><CreateRide /></PrivateRoute>} />
+              
+              {/* <Route path="/chat/:rideId" element={<ChatRoom />} /> */}
+
               <Route path="/rides" element={<RideResults/>} />
 
             </Route>
+            <Route path="/chat/:rideId" element={<PrivateRoute><RideChat /></PrivateRoute>} />
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </div>

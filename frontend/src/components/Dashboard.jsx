@@ -35,6 +35,50 @@ const Dashboard = () => {
   const [userRides, setUserRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const handleBookRide = async (rideId) => {
+    try {
+      await rideService.expressInterest(rideId);
+      toast.success("Ride booked successfully!");
+      navigate('/dashboard')
+      setSelectedRide(false);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to book ride");
+    }
+  };
+
+  const handleChatWithDriver = (rideId) => {
+    navigate(`/chat/${rideId}`)
+    
+  };
+
+  const handleViewMap = (origin, destination) => {
+    const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+      origin
+    )}&destination=${encodeURIComponent(destination)}`;
+    window.open(mapUrl, "_blank");
+  };
+
+  const handleShareRide = (ride) => {
+    const shareText = `Ride from ${ride.origin} to ${
+      ride.destination
+    } on ${new Date(ride.date).toLocaleDateString()} - ₹${
+      ride.price
+    } per seat.`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Ride on DoryCar",
+          text: shareText,
+          url: window.location.href,
+        })
+        .catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareText + " " + window.location.href);
+      toast.info("Ride details copied to clipboard!");
+    }
+  };
+
   const cancellationReasons = [
     "Change of plans",
     "Vehicle issue",
